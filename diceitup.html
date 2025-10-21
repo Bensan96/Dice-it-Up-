@@ -1,0 +1,2801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dice it Up!</title>
+    <!-- Load Tailwind CSS via CDN for mobile-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900;950&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #e6e6e6; }
+        .die {
+            width: 60px; height: 60px; line-height: 60px;
+            font-size: 32px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out, opacity 0.2s, background 0.2s, color 0.2s;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none; /* Standard */
+            position: relative; /* For sparkle effect positioning */
+            overflow: hidden; /* To contain sparkles */
+        }
+        .die:active { transform: scale(0.95); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6); }
+        .locked {
+            border: 4px solid #f97316; /* Orange border for locked dice */
+            background-color: #374151 !important;
+            color: #f3f4f6 !important;
+        }
+        /* Visual and functional style for disabled dice */
+        .die-disabled {
+            cursor: default !important;
+            opacity: 0.5;
+            pointer-events: none; /* Ensures no click events fire */
+        }
+
+        .btn-primary {
+            background-image: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+             transform: translateY(-2px);
+             box-shadow: 0 6px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-shop {
+            background-image: linear-gradient(135deg, #a855f7 0%, #c084fc 100%);
+            transition: all 0.2s;
+        }
+        .btn-shop:hover, .btn-shop:focus {
+             transform: translateY(-2px);
+             box-shadow: 0 6px 12px rgba(192, 132, 252, 0.3);
+        }
+        .btn-payout {
+            background-image: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+            transition: all 0.2s;
+        }
+        .btn-payout:hover, .btn-payout:focus {
+             transform: translateY(-2px);
+             box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
+        }
+        .card-effect {
+            background-color: #1a1e26;
+            border: 1px solid #374151;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.4);
+        }
+        .card-reward {
+             border: 2px solid #f97316;
+             cursor: pointer;
+             transition: all 0.2s;
+        }
+        .card-reward:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 20px rgba(249, 115, 22, 0.2);
+        }
+        .card-shop-option {
+             border: 2px solid transparent;
+             cursor: pointer;
+             transition: all 0.2s;
+        }
+        .card-shop-option:not(.disabled):hover {
+            border-color: #f97316;
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px rgba(249, 115, 22, 0.2);
+        }
+        
+        .game-over-title {
+             font-size: 4rem; 
+             font-weight: 950;
+             letter-spacing: -2px;
+             text-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+        }
+        
+        /* --- Background & Sparkle Effects --- */
+        #background-effects-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .bg-circuit {
+            background-color: #02040a;
+            background-image:
+                linear-gradient(rgba(25, 85, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(25, 85, 255, 0.1) 1px, transparent 1px);
+            background-size: 25px 25px;
+        }
+
+        .bg-nebula {
+            background: #000010;
+            background-image: radial-gradient(ellipse at top, #1b2735 0%, #090a0f 100%);
+        }
+
+        @keyframes move-twinkle-effect {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-1000px); }
+        }
+
+        .sparkle-effect .star {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 2px;
+            height: 2px;
+            background-color: white;
+            border-radius: 50%;
+            animation-name: move-twinkle-effect;
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+            opacity: 0;
+        }
+
+        /* --- NEW: Dice Sparkle Effect --- */
+        .die-sparkle-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes die-sparkle-anim {
+            0% { transform: scale(0) rotate(0deg); opacity: 1; }
+            70% { transform: scale(1) rotate(180deg); opacity: 0.5; }
+            100% { transform: scale(1.2) rotate(270deg); opacity: 0; }
+        }
+        .effect-stardust .sparkle {
+            position: absolute;
+            width: 5px; height: 5px;
+            background-color: white;
+            border-radius: 50%;
+            animation-name: die-sparkle-anim;
+            animation-timing-function: ease-out;
+            animation-iteration-count: infinite;
+            box-shadow: 0 0 4px #fff, 0 0 8px #fff, 0 0 12px #e60073;
+        }
+
+        
+        /* --- Achievement & Cosmetic Styles --- */
+        .progress-bar-bg { background-color: #4a5568; }
+        .progress-bar-fill { background-color: #f6e05e; }
+
+        @keyframes shiny-effect {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skin-cosmic {
+            background: linear-gradient(135deg, #1f005c, #930077, #ff6969, #ffb32f);
+            color: white;
+            animation: cosmic-bg 10s ease infinite;
+            background-size: 400% 400%;
+        }
+        @keyframes cosmic-bg {
+            0%{background-position:0% 50%}
+            50%{background-position:100% 50%}
+            100%{background-position:0% 50%}
+        }
+        .skin-molten {
+            background: linear-gradient(45deg, #ff4e00, #ffbe00);
+            color: #3d1c02;
+            text-shadow: 0 0 5px #fff;
+        }
+        .skin-glacial {
+            background: linear-gradient(135deg, #d4f2ff, #82c0ff, #3c8ce7);
+            color: #002366;
+            border: 2px solid #fff;
+        }
+        .roll-btn-cosmic {
+             background: linear-gradient(135deg, #1f005c, #930077, #ff6969, #ffb32f);
+             animation: cosmic-bg 10s ease infinite;
+             background-size: 400% 400%;
+        }
+        .roll-btn-molten {
+            background: linear-gradient(45deg, #ff4e00, #ffbe00);
+            text-shadow: 0 0 5px #fff;
+        }
+        .roll-btn-glacial {
+            background: linear-gradient(135deg, #d4f2ff, #82c0ff, #3c8ce7);
+            color: #002366;
+        }
+        
+        /* --- NEW: Enhancement Icon Styles --- */
+        .enhancement-icon {
+            position: relative;
+            width: 48px;
+            height: 48px;
+            padding: 6px;
+            border-radius: 8px;
+            background-color: #2d3748;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .enhancement-icon:hover {
+            transform: scale(1.1);
+        }
+        .enhancement-icon svg {
+            width: 100%;
+            height: 100%;
+        }
+        .enhancement-count {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            background-color: #f97316;
+            color: white;
+            border-radius: 9999px;
+            width: 22px;
+            height: 22px;
+            font-size: 12px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #1a1e26;
+        }
+    </style>
+</head>
+<body class="p-4 flex flex-col items-center min-h-screen">
+
+    <div id="background-effects-container"></div>
+
+    <!-- Game Container -->
+    <div id="game-container" class="w-full max-w-sm">
+
+        <!-- Header and Status -->
+        <header class="text-center mb-6">
+            <div class="flex justify-center items-center gap-4">
+                <!-- To change the title image, replace the 'src' URL in the img tag below with the URL of your PNG -->
+                <img src="https://placehold.co/300x75/0d1117/3b82f6?text=Dice+it+Up!" alt="Dice it Up! Title" class="max-h-20">
+            </div>
+            
+            <!-- Goal Display -->
+            <div class="text-xl mt-3 p-3 bg-yellow-900 border border-yellow-700 rounded-xl">
+                Cycle Goal: <span id="goal-display" class="font-bold text-yellow-300"></span> Chips
+            </div>
+
+            <!-- Chips, Round, Reroll Display -->
+            <div class="flex justify-between items-center text-lg mt-3 p-3 card-effect rounded-xl">
+                <p>Chips: <span id="chips-display" class="font-bold text-yellow-400">0</span></p>
+                <p>Round: <span id="round-display" class="font-bold text-red-400">1</span>/5 (C<span id="cycle-display">1</span>)</p>
+                <p>Rerolls: <span id="reroll-display" class="font-bold text-green-400">2</span></p>
+            </div>
+        </header>
+
+        <!-- Dice Display Area -->
+        <div id="dice-container" class="flex justify-around flex-wrap gap-3 p-4 bg-gray-800 rounded-xl mb-6">
+            <!-- Dice elements will be injected here -->
+        </div>
+
+        <!-- Combo Score Area -->
+        <div id="combo-display" class="mb-6 p-3 bg-gray-900 rounded-xl card-effect text-center text-lg h-20 flex flex-col justify-center">
+            <p id="current-combo" class="text-gray-400">Roll to start!</p>
+            <p id="combo-score" class="text-yellow-300 font-bold hidden"></p>
+            <p id="scoring-note" class="text-xs text-gray-500 mt-1">Score is added when you SCORE.</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col gap-3">
+            <!-- Main Roll Button -->
+            <button id="roll-btn" class="w-full py-3 rounded-xl text-xl font-bold btn-primary disabled:opacity-50" disabled>ROLL</button>
+            
+            <!-- Three Action Buttons (Made text smaller for mobile) -->
+            <div class="grid grid-cols-3 gap-2 text-sm md:text-xl">
+                <button id="shop-btn" class="py-3 rounded-xl font-bold btn-shop disabled:opacity-50" disabled>SHOP</button>
+                <button id="score-btn" class="py-3 rounded-xl font-bold bg-purple-600 hover:bg-purple-700 disabled:opacity-50" disabled>SCORE</button>
+                <button id="payout-btn" class="py-3 rounded-xl font-bold btn-payout disabled:opacity-50" disabled>PAYOUT</button>
+            </div>
+
+            <!-- Moved Perk and Stat buttons -->
+            <div class="flex justify-center items-center gap-4 pt-2">
+                <button id="perks-list-btn" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" title="View All Perks">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-300"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                </button>
+                <button id="hands-list-btn" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" title="View Scoring Hands">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-300"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8" cy="8" r="1.5"></circle><circle cx="16" cy="8" r="1.5"></circle><circle cx="8" cy="16" r="1.5"></circle><circle cx="16" cy="16" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg>
+                </button>
+                <button id="achievements-btn" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" title="View Achievements">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-500"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"></path></svg>
+                </button>
+                <button id="stats-btn" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" title="View Statistics">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-green-300"><path d="M12 20V10"></path><path d="M18 20V4"></path><path d="M6 20V16"></path></svg>
+                </button>
+                <button id="restart-btn" class="p-2 rounded-full bg-gray-700 hover:bg-gray-600 transition-colors" title="Restart Run">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M21 21v-5h-5"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Enhancements Display -->
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-3 text-center text-blue-300">Active Enhancements (Jokers)</h2>
+            <div id="enhancements-list" class="flex flex-wrap justify-center gap-2 p-2 rounded-lg card-effect min-h-[64px]">
+                <!-- Enhancement Icons will be displayed here -->
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- Tooltip -->
+    <div id="tooltip" class="hidden fixed bg-gray-900 border border-gray-600 text-white text-sm rounded-lg p-3 z-50 pointer-events-none max-w-xs shadow-xl"></div>
+
+    <!-- Modal for Shop (Standard Upgrades & Selling) -->
+    <div id="shop-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-xl w-full max-w-sm card-effect max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-center mb-4 text-purple-400">Enhancement Shop</h2>
+            <p class="text-center mb-4 text-lg">Current Chips: <span id="modal-chips" class="font-bold text-yellow-400">0</span></p>
+            <p class="text-center mb-4 text-sm text-yellow-600" id="discount-display"></p>
+            
+            <h3 class="text-xl font-bold text-orange-400 border-b border-gray-600 pb-2 mb-3 mt-4">For Sale (Buy)</h3>
+            <div id="shop-options" class="flex flex-col gap-4">
+                <!-- Shop item cards will be injected here -->
+            </div>
+
+            <div class="flex flex-col gap-2 mt-4">
+                <button id="reroll-shop-btn" class="w-full py-3 rounded-xl text-lg font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50">Reroll (25C)</button>
+                <button id="close-shop-modal-btn" class="w-full py-3 rounded-xl text-lg font-bold bg-gray-600 hover:bg-gray-700">Close</button>
+            </div>
+
+            <h3 class="text-xl font-bold text-red-400 border-b border-gray-600 pb-2 mb-3 mt-4">Sell Perks (Dismantle)</h3>
+             <div id="sell-options" class="flex flex-col gap-3">
+                <!-- Sell item cards will be injected here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for Perks List -->
+    <div id="perks-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-xl w-full max-w-sm card-effect max-h-[90vh] flex flex-col">
+            <h2 class="text-2xl font-bold text-center mb-4 text-blue-400">Perk Compendium</h2>
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600 mb-4 flex-shrink-0">
+                <button id="shop-perks-tab" class="flex-1 py-2 text-center font-bold border-b-2 border-blue-400 text-blue-300 transition-colors">Shop Perks</button>
+                <button id="payout-perks-tab" class="flex-1 py-2 text-center font-bold border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition-colors">Payout Perks</button>
+            </div>
+
+            <!-- Tab Content Area -->
+            <div id="perks-list-content" class="flex-grow overflow-y-auto">
+                <!-- Content will be injected here by JS -->
+            </div>
+
+            <button id="close-perks-modal-btn" class="w-full mt-6 py-3 rounded-xl text-lg font-bold bg-gray-600 hover:bg-gray-700 flex-shrink-0">Close</button>
+        </div>
+    </div>
+
+    <!-- Modal for Statistics -->
+    <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-xl w-full max-w-sm card-effect max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-center mb-4 text-green-400">Run Statistics</h2>
+            
+            <div id="stats-list-content" class="flex flex-col gap-3 text-lg">
+                <!-- Stats will be injected here -->
+            </div>
+
+            <button id="close-stats-modal-btn" class="w-full mt-6 py-3 rounded-xl text-lg font-bold bg-gray-600 hover:bg-gray-700">Close</button>
+        </div>
+    </div>
+
+    <!-- Modal for Achievements -->
+    <div id="achievements-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-xl w-full max-w-lg card-effect max-h-[90vh] flex flex-col">
+            <h2 class="text-2xl font-bold text-center mb-4 text-yellow-500">Achievements & Cosmetics</h2>
+            
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-600 mb-4 flex-shrink-0">
+                <button data-tab="achievements" class="achievement-tab flex-1 py-2 text-center font-bold border-b-2 border-yellow-400 text-yellow-300 transition-colors">Achievements</button>
+                <button data-tab="cosmetics" class="achievement-tab flex-1 py-2 text-center font-bold border-b-2 border-transparent text-gray-400 hover:text-gray-200 transition-colors">Cosmetics</button>
+            </div>
+            
+            <!-- Achievements Tab Content -->
+            <div id="achievements-tab-content" class="flex-grow overflow-y-auto pr-2">
+                <!-- Category buttons -->
+                <div id="achievement-category-buttons" class="flex flex-wrap justify-center gap-2 mb-4"></div>
+                <!-- Achievement list -->
+                <div id="achievements-list-content" class="flex flex-col gap-2"></div>
+            </div>
+            
+            <!-- Cosmetics Tab Content -->
+            <div id="cosmetics-tab-content" class="hidden flex-grow overflow-y-auto pr-2">
+                 <h3 class="text-xl font-bold text-center mt-2 mb-2 text-blue-300">Dice Skins</h3>
+                 <div id="dice-skins-selector" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4"></div>
+                 <h3 class="text-xl font-bold text-center mt-4 mb-2 text-yellow-300">Dice Effects</h3>
+                 <div id="dice-effects-selector" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4"></div>
+                 <h3 class="text-xl font-bold text-center mt-4 mb-2 text-green-300">Roll Button Styles</h3>
+                 <div id="roll-button-selector" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4"></div>
+                 <h3 class="text-xl font-bold text-center mt-4 mb-2 text-purple-300">Game Backgrounds</h3>
+                 <div id="background-selector" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4"></div>
+            </div>
+
+            <button id="close-achievements-modal-btn" class="w-full mt-4 py-3 rounded-xl text-lg font-bold bg-gray-600 hover:bg-gray-700 flex-shrink-0">Close</button>
+        </div>
+    </div>
+
+    <!-- Modal for Scoring Hands -->
+    <div id="hands-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 p-6 rounded-xl w-full max-w-sm card-effect max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-bold text-center mb-4 text-yellow-400">Scoring Hands</h2>
+            <p class="text-center text-sm text-gray-400 mb-4">Base scores shown. <strong class="text-yellow-300">The value of scoring dice is added to the total.</strong> Perks can increase these values!</p>
+            <div id="hands-list-content" class="flex flex-col gap-3 text-lg">
+                <!-- Hands will be injected here -->
+            </div>
+            <button id="close-hands-modal-btn" class="w-full mt-6 py-3 rounded-xl text-lg font-bold bg-gray-600 hover:bg-gray-700">Close</button>
+        </div>
+    </div>
+
+    <!-- Modal for Payout Success & Reward Selection (Goal Rewards) -->
+    <div id="payout-success-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-indigo-900 border border-indigo-700 p-6 rounded-xl w-full max-w-sm card-effect max-h-[90vh] overflow-y-auto text-center">
+            <h2 class="text-3xl font-bold mb-3 text-indigo-300">GOAL PAID! (Cycle <span id="payout-cycle-display"></span>)</h2>
+            <p class="text-xl mb-4 text-gray-200">You paid <span id="paid-goal" class="font-bold text-yellow-300"></span> Chips. Choose your <strong>Free Payout Reward</strong>:</p>
+            <p class="text-sm italic mb-4 text-green-400" id="payout-bonus-note"></p>
+            <div id="reward-options" class="flex flex-col gap-4">
+                <!-- Reward cards will be injected here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for Replacement Selection (T2/T1) -->
+    <div id="replacement-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-red-900 border border-red-700 p-6 rounded-xl w-full max-w-sm card-effect max-h-[90vh] overflow-y-auto text-center">
+            <h2 class="text-2xl font-bold mb-3 text-red-300">CONFIRM REPLACEMENT</h2>
+            <p class="text-lg mb-2 text-gray-200">You selected: <span id="new-perk-name" class="font-bold text-yellow-300"></span> (T<span id="new-perk-tier"></span>)</p>
+            <p class="text-lg mb-4 text-gray-200">Select which of your existing T<span id="existing-perk-tier"></span> perks to <strong>DISCARD</strong>:</p>
+            <div id="perks-to-replace-list" class="flex flex-col gap-3">
+                <!-- Existing perks to replace will be injected here -->
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal for Game Over (Goal Failed or Forced Payment Prompt) -->
+    <div id="game-over-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-red-900 border border-red-700 p-8 rounded-xl w-full max-w-sm card-effect text-center">
+            <h2 id="fail-title" class="game-over-title mb-4 text-red-500">FAILURE</h2>
+            <p class="text-xl mb-2 text-gray-200">You were short by: <span id="chips-short" class="font-bold text-red-100"></span> Chips.</p>
+            <p class="text-2xl mb-6 text-gray-200 font-extrabold">Total Cycles Completed: <span id="final-cycle" class="font-bold text-yellow-300">0</span></p>
+            <button class="w-full py-3 rounded-xl text-xl font-bold bg-red-600 hover:bg-red-700">Start New Run</button>
+        </div>
+    </div>
+    
+    <!-- Modal for Restart Confirmation -->
+    <div id="restart-confirm-modal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-gray-800 border border-yellow-700 p-8 rounded-xl w-full max-w-sm card-effect text-center">
+            <h2 class="text-3xl font-bold mb-4 text-yellow-400">RESTART RUN?</h2>
+            <p class="text-lg mb-6 text-gray-200">Are you sure you want to end your current run? All progress in this run will be lost.</p>
+            <div class="flex gap-4">
+                <button id="cancel-restart-btn" class="w-full py-3 rounded-xl text-xl font-bold bg-gray-600 hover:bg-gray-700">Cancel</button>
+                <button id="confirm-restart-btn" class="w-full py-3 rounded-xl text-xl font-bold bg-red-600 hover:bg-red-700">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="text-center mt-8 mb-4 text-sm text-gray-500">
+        <p>Created by <span class="font-bold text-gray-400">[Your Name Here]</span></p>
+    </footer>
+
+    <script>
+        // --- Firebase/Canvas Setup (MANDATORY) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const apiKey = "";
+        
+        // --- Game State ---
+        function getInitialState() {
+            return {
+                chips: 0,
+                round: 1, 
+                cycle: 1, 
+                maxRounds: 5,
+                rerolls: 2,
+                dice: [
+                    { value: 1, locked: false, index: 0 },
+                    { value: 1, locked: false, index: 1 },
+                    { value: 1, locked: false, index: 2 },
+                    { value: 1, locked: false, index: 3 },
+                    { value: 1, locked: false, index: 4 }
+                ],
+                enhancements: [],
+                currentShop: [], 
+                shopRerollCost: 25,
+                isFirstRoll: true,
+                isRolling: false,
+                hasScoredThisRound: false, 
+                freeRerollUsedThisRound: false,
+                roundLockedDown: false, 
+                currentCycleGoal: 150, 
+                payoutSuccessful: false, 
+                payoutReady: false, 
+                repeaterTargetIndex: -1, 
+                payoutSuccessCount: { 1: 0, 2: 0, 3: 0 },
+                maxPerks: { 1: 5, 2: 3, 3: 1 },
+                baseScores: {
+                    "Pair": 10, "Two Pair": 30, "Three of a Kind": 60, "Straight": 120, "Full House": 200, 
+                    "Four of a Kind": 350, "Five of a Kind": 500
+                },
+                stats: {
+                    totalChipsEarned: 0,
+                    highestRoundScore: 0,
+                    rerollsUsed: 0,
+                    shopPerksBoughtThisCycle: 0,
+                    shopRerollsThisRun: 0,
+                    combosScored: {
+                        "Pair": 0, "Two Pair": 0, "Three of a Kind": 0, "Straight": 0, "Full House": 0, 
+                        "Four of a Kind": 0, "Five of a Kind": 0
+                    }
+                },
+                pendingReplacementPerk: null 
+            };
+        }
+        let gameState = getInitialState();
+
+        // --- Persistent Stats that don't reset ---
+        let persistentStats = {
+            highestCycleReached: 0,
+            highestScoreInOneRound: 0,
+            totalRunsStarted: 0,
+            totalCombosScored: {
+                "Pair": 0, "Two Pair": 0, "Three of a Kind": 0, "Straight": 0, "Full House": 0, 
+                "Four of a Kind": 0, "Five of a Kind": 0
+            },
+            totalPerksBought: 0
+        };
+
+        // --- Achievements and Cosmetics ---
+        let achievementProgress = {};
+        let selectedDiceSkin = 'default';
+        let selectedDiceEffect = 'none';
+        let selectedRollBtnStyle = 'default';
+        let selectedBackgroundStyle = 'default';
+
+        const diceSkins = {
+            'default': { name: 'Default', class: 'bg-white text-black' },
+            'ruby': { name: 'Ruby', class: 'bg-red-500 text-white' },
+            'emerald': { name: 'Emerald', class: 'bg-green-500 text-white' },
+            'sapphire': { name: 'Sapphire', class: 'bg-blue-500 text-white' },
+            'golden': { name: 'Golden', class: 'bg-yellow-500 text-black' },
+            'molten': { name: 'Molten', class: 'skin-molten' },
+            'glacial': { name: 'Glacial', class: 'skin-glacial' },
+            'cosmic': { name: 'Cosmic', class: 'skin-cosmic' },
+        };
+
+        const diceEffects = {
+            'none': { name: 'None', class: '' },
+            'stardust': { name: 'Stardust', class: 'effect-stardust' }
+        };
+        
+        const rollButtonStyles = {
+            'default': { name: 'Default', class: 'btn-primary' },
+            'molten': { name: 'Molten', class: 'roll-btn-molten' },
+            'glacial': { name: 'Glacial', class: 'roll-btn-glacial text-black' },
+            'cosmic': { name: 'Cosmic', class: 'roll-btn-cosmic' },
+        };
+
+        const backgroundStyles = {
+            'default': { name: 'Default', class: '', sparkles: false },
+            'circuit': { name: 'Circuit', class: 'bg-circuit', sparkles: false },
+            'nebula': { name: 'Nebula', class: 'bg-nebula', sparkles: false },
+            'sparkle': { name: 'Cosmic Field', class: 'bg-nebula', sparkles: true },
+        };
+
+        const achievements = [
+            // --- Cycle Progression ---
+            { id: 'cycle_3', name: 'Apprentice Roller', description: 'Reach Cycle 3.', category: 'Cycles', condition: (state, context) => state.cycle >= 3, reward: null },
+            { id: 'cycle_5', name: 'Seasoned Roller', description: 'Reach Cycle 5.', category: 'Cycles', condition: (state, context) => state.cycle >= 5, reward: { type: 'dice_skin', id: 'ruby' } },
+            { id: 'cycle_8', name: 'Expert Roller', description: 'Reach Cycle 8.', category: 'Cycles', condition: (state, context) => state.cycle >= 8, reward: { type: 'roll_btn', id: 'molten' } },
+            { id: 'cycle_10', name: 'Veteran Roller', description: 'Reach Cycle 10.', category: 'Cycles', condition: (state, context) => state.cycle >= 10, reward: { type: 'dice_skin', id: 'emerald' } },
+            { id: 'cycle_12', name: 'Master Roller', description: 'Reach Cycle 12.', category: 'Cycles', condition: (state, context) => state.cycle >= 12, reward: { type: 'roll_btn', id: 'glacial' } },
+            { id: 'cycle_15', name: 'Dice Master', description: 'Reach Cycle 15.', category: 'Cycles', condition: (state, context) => state.cycle >= 15, reward: { type: 'dice_skin', id: 'golden' } },
+            { id: 'cycle_20', name: 'Legendary Roller', description: 'Reach Cycle 20.', category: 'Cycles', condition: (state, context) => state.cycle >= 20, reward: { type: 'background', id: 'circuit' } },
+            { id: 'cycle_25', name: 'Mythic Roller', description: 'Reach Cycle 25.', category: 'Cycles', condition: (state, context) => state.cycle >= 25, reward: { type: 'background', id: 'nebula' } },
+            
+            // --- Scoring ---
+            { id: 'score_1000', name: 'High Scorer', description: 'Score 1,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 1000, reward: { type: 'dice_skin', id: 'sapphire' } },
+            { id: 'score_5000', name: 'Mega Scorer', description: 'Score 5,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 5000, reward: null },
+            { id: 'score_10000', name: 'Giga Scorer', description: 'Score 10,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 10000, reward: { type: 'dice_skin', id: 'molten' } },
+            { id: 'score_25000', name: 'Tera Scorer', description: 'Score 25,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 25000, reward: { type: 'roll_btn', id: 'cosmic' } },
+            { id: 'score_50000', name: 'Peta Scorer', description: 'Score 50,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 50000, reward: { type: 'dice_skin', id: 'cosmic' } },
+            { id: 'score_100k', name: 'Mega Peta Scorer', description: 'Score 100,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 100000, reward: null },
+            { id: 'score_250k', name: 'Exa Scorer', description: 'Score 250,000+ in one round.', category: 'Scoring', condition: (state, context) => context.score >= 250000, reward: { type: 'background', id: 'sparkle' } },
+            
+            // --- Combo Scoring (Multi-step) ---
+            { id: 'score_pair_1', name: 'Pair Professional I', description: 'Score 10 Pairs in total.', category: 'Combos', type: 'progress', goal: 10, check: (state, context) => context.combo === 'Pair' ? 1 : 0, reward: null },
+            { id: 'score_pair_2', name: 'Pair Professional II', description: 'Score 50 Pairs in total.', category: 'Combos', type: 'progress', goal: 50, check: (state, context) => context.combo === 'Pair' ? 1 : 0, reward: null },
+            { id: 'score_pair_3', name: 'Pair Professional III', description: 'Score 100 Pairs in total.', category: 'Combos', type: 'progress', goal: 100, check: (state, context) => context.combo === 'Pair' ? 1 : 0, reward: null },
+            { id: 'score_3kind_1', name: 'Triple Threat I', description: 'Score 10 Three of a Kinds.', category: 'Combos', type: 'progress', goal: 10, check: (state, context) => context.combo === 'Three of a Kind' ? 1 : 0, reward: null },
+            { id: 'score_3kind_2', name: 'Triple Threat II', description: 'Score 50 Three of a Kinds.', category: 'Combos', type: 'progress', goal: 50, check: (state, context) => context.combo === 'Three of a Kind' ? 1 : 0, reward: null },
+            { id: 'score_straight_1', name: 'Straight Shooter I', description: 'Score 5 Straights.', category: 'Combos', type: 'progress', goal: 5, check: (state, context) => context.combo === 'Straight' ? 1 : 0, reward: null },
+            { id: 'score_straight_2', name: 'Straight Shooter II', description: 'Score 25 Straights.', category: 'Combos', type: 'progress', goal: 25, check: (state, context) => context.combo === 'Straight' ? 1 : 0, reward: null },
+            { id: 'score_fullhouse_1', name: 'Full House Fanatic I', description: 'Score 5 Full Houses.', category: 'Combos', type: 'progress', goal: 5, check: (state, context) => context.combo === 'Full House' ? 1 : 0, reward: null },
+            { id: 'score_fullhouse_2', name: 'Full House Fanatic II', description: 'Score 25 Full Houses.', category: 'Combos', type: 'progress', goal: 25, check: (state, context) => context.combo === 'Full House' ? 1 : 0, reward: null },
+            { id: 'score_4kind_1', name: 'Four of a Find I', description: 'Score 5 Four of a Kinds.', category: 'Combos', type: 'progress', goal: 5, check: (state, context) => context.combo === 'Four of a Kind' ? 1 : 0, reward: null },
+            { id: 'score_4kind_2', name: 'Four of a Find II', description: 'Score 25 Four of a Kinds.', category: 'Combos', type: 'progress', goal: 25, check: (state, context) => context.combo === 'Four of a Kind' ? 1 : 0, reward: null },
+            { id: 'score_5kind_1', name: 'Five of a Find I', description: 'Score a Five of a Kind.', category: 'Combos', type: 'progress', goal: 1, check: (state, context) => context.combo === 'Five of a Kind' ? 1 : 0, reward: null },
+            { id: 'score_5kind_2', name: 'Five of a Find II', description: 'Score 5 Five of a Kinds.', category: 'Combos', type: 'progress', goal: 5, check: (state, context) => context.combo === 'Five of a Kind' ? 1 : 0, reward: null },
+            { id: 'score_5kind_3', name: 'Five of a Find III', description: 'Score 10 Five of a Kinds.', category: 'Combos', type: 'progress', goal: 10, check: (state, context) => context.combo === 'Five of a Kind' ? 1 : 0, reward: { type: 'dice_skin', id: 'glacial' } },
+            { id: 'score_5kind_4', name: 'Five of a Find IV', description: 'Score 25 Five of a Kinds.', category: 'Combos', type: 'progress', goal: 25, check: (state, context) => context.combo === 'Five of a Kind' ? 1 : 0, reward: null },
+
+            // --- Shop & Perks ---
+            { id: 'buy_perk_1', name: 'Shopper', description: 'Buy your first perk.', category: 'Shop', condition: (state, context) => context.action === 'buy_perk', reward: null },
+            { id: 'buy_perks_25', name: 'Collector', description: 'Buy 25 perks in total.', category: 'Shop', type: 'progress', goal: 25, check: (state, context) => context.action === 'buy_perk' ? 1 : 0, reward: null },
+            { id: 'buy_perks_100', name: 'Hoarder', description: 'Buy 100 perks in total.', category: 'Shop', type: 'progress', goal: 100, check: (state, context) => context.action === 'buy_perk' ? 1 : 0, reward: null },
+            { id: 'buy_perks_250', name: 'The Curator', description: 'Buy 250 perks in total.', category: 'Shop', type: 'progress', goal: 250, check: (state, context) => context.action === 'buy_perk' ? 1 : 0, reward: null },
+            { id: 'buy_perks_500', name: 'The Magnate', description: 'Buy 500 perks in total.', category: 'Shop', type: 'progress', goal: 500, check: (state, context) => context.action === 'buy_perk' ? 1 : 0, reward: { type: 'dice_effect', id: 'stardust' } },
+            { id: 'buy_legendary', name: 'Fortune Seeker', description: 'Buy a Legendary perk.', category: 'Shop', condition: (state, context) => context.action === 'buy_perk' && context.perk.rarity === 'legendary', reward: null },
+            { id: 'sell_perk_1', name: 'Liquidator', description: 'Sell a perk.', category: 'Shop', condition: (state, context) => context.action === 'sell_perk', reward: null },
+            { id: 'reroll_shop_10', name: 'Window Shopper', description: 'Reroll the shop 10 times in one run.', category: 'Shop', condition: (state, context) => context.action === 'reroll_shop' && state.stats.shopRerollsThisRun >= 10, reward: null },
+            { id: 'fill_common', name: 'Common Collector', description: 'Fill all 5 Tier 1 Payout Perk slots.', category: 'Shop', condition: (state, context) => state.payoutSuccessCount[1] >= state.maxPerks[1], reward: null },
+            { id: 'fill_uncommon', name: 'Uncommon Union', description: 'Fill all 3 Tier 2 Payout Perk slots.', category: 'Shop', condition: (state, context) => state.payoutSuccessCount[2] >= state.maxPerks[2], reward: null },
+            { id: 'fill_rare', name: 'Rare Assembly', description: 'Fill the Tier 3 Payout Perk slot.', category: 'Shop', condition: (state, context) => state.payoutSuccessCount[3] >= state.maxPerks[3], reward: null },
+
+            // --- Miscellaneous & Challenges ---
+            { id: 'first_run', name: 'Getting Started', description: 'Start your first run.', category: 'Misc', condition: (state, context) => context.action === 'start_run', reward: null },
+            { id: 'ten_runs', name: 'Persistent', description: 'Start 10 runs.', category: 'Misc', type: 'progress', goal: 10, check: (state, context) => context.action === 'start_run' ? 1 : 0, reward: null },
+            { id: 'fifty_runs', name: 'Determined', description: 'Start 50 runs.', category: 'Misc', type: 'progress', goal: 50, check: (state, context) => context.action === 'start_run' ? 1 : 0, reward: null },
+            { id: 'hundred_runs', name: 'Relentless', description: 'Start 100 runs.', category: 'Misc', type: 'progress', goal: 100, check: (state, context) => context.action === 'start_run' ? 1 : 0, reward: null },
+            { id: 'six_dice', name: 'Fully Loaded', description: 'Acquire a 6th die.', category: 'Misc', condition: (state, context) => state.dice.length >= 6, reward: null },
+            { id: 'no_reroll_round', name: 'One Shot', description: 'Score a round without using any rerolls.', category: 'Misc', condition: (state, context) => context.action === 'score' && context.rerollsUsedInRound === 0, reward: null },
+            { id: 'no_shop_cycle', name: 'Self-Sufficient', description: 'Complete a cycle without buying any shop perks.', category: 'Misc', condition: (state, context) => context.action === 'payout' && context.shopPerksBoughtThisCycle === 0, reward: null },
+        ];
+
+
+        // --- Shop Enhancements ---
+        const shopEnhancements = [
+            // --- COMMON PERKS ---
+            { id: 16, name: "Beginner's Luck", description: "Gain **chips:+80 Chips** immediately. (One-time purchase)", cost: 50, rarity: "common", effect: { type: "chips_flat_bonus", value: 80 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v8m-4-4h8"></path></svg>` },
+            { id: 1, name: "Lucky Charm", description: "**chips:+10 Chips** for every **score:Pair** score. (Stackable)", cost: 100, rarity: "common", effect: { type: "flat_bonus", combo: "Pair", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>` },
+            { id: 17, name: "Deuce Dropper", description: "**chips:+2 Chips** for every **score:'2' die locked** when scoring. (Stackable)", cost: 100, rarity: "common", effect: { type: "value_count_bonus", value: 2, check: 2 }, icon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="15" r="2"></circle><circle cx="15" cy="9" r="2"></circle></svg>` },
+            { id: 12, name: "Chip Stealer", description: "Gain **chips:+1 Chip** for every **score:'1' die locked** when scoring. (Stackable)", cost: 110, rarity: "common", effect: { type: "value_count_bonus", value: 1, check: 1 }, icon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="2"></circle></svg>` },
+            { id: 20, name: "Straight Bonus", description: "**chips:+15 Chips** for every **score:Straight** score. (Stackable)", cost: 110, rarity: "common", effect: { type: "flat_bonus", combo: "Straight", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16m-12-4h8m-4 8h4"></path></svg>` },
+            { id: 15, name: "Two Pair Special", description: "**chips:+15 Chips** for every **score:Two Pair** score. (Stackable)", cost: 120, rarity: "common", effect: { type: "flat_bonus", combo: "Two Pair", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>` },
+            { id: 21, name: "Scrap Collector", description: "Gain **chips:+1 Chip** for every reroll used this round. (Stackable)", cost: 120, rarity: "common", effect: { type: "reroll_usage_bonus", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"></path><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"></path><path d="m14 12-4 4-4-4"></path></svg>` },
+            { id: 22, name: "Micro-Interest", description: "**chips:+1 Chip** for every **chips:200 Chips** you possess when scoring. (Stackable)", cost: 120, rarity: "common", effect: { type: "chips_scaling_bonus", value: 1, scale: 200 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>` },
+            { id: 23, name: "Pocket Change", description: "Adds **chips:+1 Chip** to the final score every round. (Stackable)", cost: 130, rarity: "common", effect: { type: "flat_round_bonus", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>` },
+            { id: 24, name: "Locksmith's Apprentice", description: "**chips:+1 Chip** for **special:each die locked** when scoring. (Stackable)", cost: 130, rarity: "common", effect: { type: "locked_die_bonus", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` },
+            { id: 25, name: "Base Pair Boost", description: "Increases the base score of **score:Pair** by **score:+10**. (Stackable)", cost: 130, rarity: "common", effect: { type: "base_score_increase", combo: "Pair", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 14h7v7h-7z"></path></svg>` },
+            { id: 26, name: "Early Bird", description: "Adds **chips:+15 Chips** to your score if you score in **special:Round 1**. (Stackable)", cost: 130, rarity: "common", effect: { type: "round_specific_bonus", round: 1, value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10m-5-4v4M12 3a9 9 0 0 1 9 9h-3a6 6 0 0 0-6-6V3z"></path></svg>` },
+            { id: 66, name: "Chain Reaction", description: "Scoring a **score:Pair** or **score:Two Pair** grants **reroll:+1 Reroll** for the next round. (Non-Stackable)", cost: 140, rarity: "common", effect: { type: "reroll_on_combo", combos: ["Pair", "Two Pair"], value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>` },
+            { id: 28, name: "Shiny Dice", description: "Adds **chips:+2 Chips** to the final score every round. (Stackable)", cost: 140, rarity: "common", effect: { type: "flat_round_bonus", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"></path></svg>` },
+            { id: 29, name: "Reroll Refund", description: "Gain **chips:+10 Chips** if you score with **reroll:max rerolls** remaining. (Stackable)", cost: 140, rarity: "common", effect: { type: "max_reroll_bonus", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M1 20v-6a8 8 0 0 1 8-8h11"></path><polyline points="1 14 1 20 7 20"></polyline><path d="M23 4v6a8 8 0 0 1-8 8H4"></path></svg>` },
+            { id: 30, name: "Greed is Good", description: "**chips:+1 Chip** for every **score:20 score points** from a combo. (Stackable)", cost: 140, rarity: "common", effect: { type: "score_scaling_bonus", value: 1, scale: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>` },
+            { id: 31, name: "Threes a Crowd", description: "**chips:+10 Chips** for every **score:Three of a Kind** score. (Stackable)", cost: 140, rarity: "common", effect: { type: "flat_bonus", combo: "Three of a Kind", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5v-2a4 4 0 0 1 4-4h2"></path><path d="M11 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"></path><path d="M22 11h-2a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2v-1.5a1.5 1.5 0 0 0-1.5-1.5 1.5 1.5 0 0 0 1.5-1.5V11z"></path></svg>` },
+
+            // --- UNCOMMON PERKS ---
+            { id: 3, name: "High Roller", description: "Adds **chips:+5 Chips** to the final score every round. (Stackable)", cost: 150, rarity: "uncommon", effect: { type: "flat_round_bonus", value: 5 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>` },
+            { id: 32, name: "Investor", description: "Gain **chips:+50 Chips** immediately. (One-time purchase)", cost: 150, rarity: "uncommon", effect: { type: "chips_flat_bonus", value: 50 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>` },
+            { id: 33, name: "Even Steven", description: "**chips:+15 Chips** if all locked dice are **special:even**. (Stackable)", cost: 160, rarity: "uncommon", effect: { type: "even_locked_bonus", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>` },
+            { id: 34, name: "Odd Job", description: "**chips:+15 Chips** if all locked dice are **special:odd**. (Stackable)", cost: 160, rarity: "uncommon", effect: { type: "odd_locked_bonus", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 9l-6 6 6 6"></path><path d="M20 9l-6 6 6 6"></path></svg>` },
+            { id: 35, name: "Minimalist", description: "**chips:+20 Chips** if you score with only **special:one die locked**. (Stackable)", cost: 160, rarity: "uncommon", effect: { type: "locked_count_bonus", count: 1, value: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>` },
+            { id: 37, name: "Pair of Pairs", description: "Increases the base score of **score:Two Pair** by **score:+20**. (Stackable)", cost: 170, rarity: "uncommon", effect: { type: "base_score_increase", combo: "Two Pair", value: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 10h.01M7 10h.01M17 14h.01M7 14h.01M4 6h16v12H4z"></path></svg>` },
+            { id: 38, name: "Consistent Roller", description: "Your **reroll:first reroll** each round is **reroll:free**. This perk is disabled if you have 'Momentum Shift'.", cost: 170, rarity: "uncommon", effect: { type: "free_first_reroll_simple" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"></path></svg>` },
+            { id: 4, name: "Full Boost", description: "Adds **chips:+20 Chips** for every **score:Full House** score. (Stackable)", cost: 180, rarity: "uncommon", effect: { type: "flat_bonus", combo: "Full House", value: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 9v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9"></path><path d="M4 13h16"></path><path d="M10 3v6"></path><path d="M14 3v6"></path><path d="M8 3h8"></path></svg>` },
+            { id: 39, name: "Last Stand", description: "Gain **chips:+30 Chips** if you score with **reroll:0 rerolls** left. (Stackable)", cost: 180, rarity: "uncommon", effect: { type: "zero_reroll_bonus", value: 30 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"></path></svg>` },
+            { id: 40, name: "The Big Six", description: "Gain **chips:+12 Chips** for every **score:'6' die locked** when scoring. (Stackable)", cost: 180, rarity: "uncommon", effect: { type: "value_count_bonus", value: 12, check: 6 }, icon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="9" r="2"></circle><circle cx="15" cy="9" r="2"></circle><circle cx="9" cy="15" r="2"></circle><circle cx="15" cy="15" r="2"></circle><circle cx="9" cy="21" r="2"></circle><circle cx="15" cy="21" r="2"></circle></svg>` },
+            { id: 8, name: "Cornerstone", description: "Adds **chips:+10 Chips** to the final score for every die locked when scoring. (Stackable)", cost: 200, rarity: "uncommon", effect: { type: "locked_die_bonus", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>` },
+            { id: 14, name: "Small Bank Interest", description: "Adds **chips:+1 Chip** to the final score for every **chips:100 Chips** you possess. (Stackable)", cost: 200, rarity: "uncommon", effect: { type: "chips_scaling_bonus", value: 1, scale: 100 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>` },
+            { id: 42, name: "Finisher", description: "Adds **chips:+25 Chips** to your score if you score in **special:Round 5**. (Stackable)", cost: 200, rarity: "uncommon", effect: { type: "round_specific_bonus", round: 5, value: 25 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>` },
+            { id: 43, name: "Thrifty", description: "Shop rerolls cost **shop:10 Chips less**. (Stackable)", cost: 200, rarity: "uncommon", effect: { type: "shop_reroll_cost_reduction", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>` },
+            { id: 67, name: "Perfect Balance", description: "Gain **chips:+30 Chips** if you score **score:Two Pair** and the sum of the pairs is 7 (e.g., 1&6, 2&5, 3&4). (Stackable)", cost: 210, rarity: "uncommon", effect: { type: "two_pair_sum_bonus", sum: 7, value: 30 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"></path></svg>` },
+            { id: 45, name: "Straight Shooter", description: "**mult:x1.2** score multiplier for **score:Straight**. (Non-Stackable)", cost: 220, rarity: "uncommon", effect: { type: "mult_bonus", combo: "Straight", value: 1.2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>` },
+            { id: 49, name: "Dice Insurance", description: "If you score 'No Combo', gain **chips:10 Chips**. (Stackable)", cost: 240, rarity: "uncommon", effect: { type: "flat_bonus", combo: "No Combo", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>` },
+            { id: 2, name: "Multiplier Die", description: "**mult:x1.5** score multiplier for **score:Three of a Kind**. (Non-Stackable)", cost: 250, rarity: "uncommon", effect: { type: "mult_bonus", combo: "Three of a Kind", value: 1.5 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>` },
+            { id: 51, name: "Four Leaf Clover", description: "Adds **chips:+40 Chips** for every **score:Four of a Kind** score. (Stackable)", cost: 260, rarity: "uncommon", effect: { type: "flat_bonus", combo: "Four of a Kind", value: 40 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l-3.5 3.5a6 6 0 0 0-8.5 8.5L2 12l3.5 3.5a6 6 0 0 0 8.5 8.5L12 22l3.5-3.5a6 6 0 0 0 8.5-8.5L22 12l-3.5-3.5a6 6 0 0 0-8.5-8.5z"></path></svg>` },
+            { id: 53, name: "Wealth Magnet", description: "**chips:+1 Chip** for every **score:15 score points** from a combo. (Stackable)", cost: 270, rarity: "uncommon", effect: { type: "score_scaling_bonus", value: 1, scale: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-3 0a3 3 0 1 0 6 0 3 3 0 1 0-6 0"></path><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg>` },
+            { id: 54, name: "The Foundation", description: "Increases the base score of **score:Three of a Kind** by **score:+30**. (Stackable)", cost: 270, rarity: "uncommon", effect: { type: "base_score_increase", combo: "Three of a Kind", value: 30 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>` },
+            { id: 55, name: "Full House Fun", description: "**mult:x1.5** score multiplier for **score:Full House**. (Non-Stackable)", cost: 280, rarity: "uncommon", effect: { type: "mult_bonus", combo: "Full House", value: 1.5 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>` },
+
+            // --- RARE PERKS ---
+            { id: 9, name: "High Fives", description: "**chips:+10 Chips** for every **score:'5' die locked** when scoring. (Stackable)", cost: 300, rarity: "rare", effect: { type: "value_count_bonus", value: 10, check: 5 }, icon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="9" r="2"></circle><circle cx="15" cy="9" r="2"></circle><circle cx="12" cy="15" r="2"></circle><circle cx="9" cy="21" r="2"></circle><circle cx="15" cy="21" r="2"></circle></svg>` },
+            { id: 57, name: "Big Investor", description: "Gain **chips:+100 Chips** immediately. (One-time purchase)", cost: 300, rarity: "rare", effect: { type: "chips_flat_bonus", value: 100 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path><path d="M20 12c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8zm-2 0c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6 6 2.69 6 6z"></path></svg>` },
+            { id: 58, name: "All In", description: "**mult:x2** score multiplier if you score with **reroll:0 rerolls left**. (Non-Stackable)", cost: 320, rarity: "rare", effect: { type: "zero_reroll_mult", value: 2 }, minCycle: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>` },
+            { id: 59, name: "The Collector", description: "Adds **chips:+20 Chips** to the final score for every die locked when scoring. (Stackable)", cost: 340, rarity: "rare", effect: { type: "locked_die_bonus", value: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path><path d="M12 22v-6.5"></path></svg>` },
+            { id: 60, name: "Pair Parity", description: "**score:Pair** combos score as if they were **score:Three of a Kind**. (Base score only). (Non-Stackable)", cost: 350, rarity: "rare", effect: { type: "combo_transformation", from: "Pair", to: "Three of a Kind" }, minCycle: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m15-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"></path><path d="M12 8v8"></path><path d="M10 10h4"></path></svg>` },
+            { id: 61, name: "Bank Loan", description: "All `chips_scaling_bonus` perks are **special:twice** as effective. (Non-Stackable)", cost: 360, rarity: "rare", effect: { type: "scaling_bonus_mult", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M18 6l-6 6-6-6"></path></svg>` },
+            { id: 62, name: "Obsidian Die", description: "All locked dice with a value of **1** are treated as **6** for scoring purposes. (Non-Stackable)", cost: 380, rarity: "rare", effect: { type: "value_transformation", from: 1, to: 6 }, minCycle: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>` },
+            { id: 64, name: "Short Straight", description: "**score:Straights** can now be formed with **special:4 dice** instead of 5. (Non-Stackable)", cost: 400, rarity: "rare", effect: { type: "short_straight" }, minCycle: 3, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3-9-4 16-3-9H2"></path></svg>` },
+            { id: 69, name: "Probability Bender", description: "Increases the success chance of all percentage-based perks by **special:1%**. (Stackable)", cost: 350, rarity: "rare", effect: { type: "chance_increase", value: 0.01 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.5 10.5c-1.5-1.5-3-1.5-4.5 0s-1.5 3 0 4.5 3 1.5 4.5 0 1.5-3 0-4.5zM13.5 13.5c1.5 1.5 3 1.5 4.5 0s1.5-3 0-4.5-3-1.5-4.5 0-1.5 3 0 4.5z"></path></svg>` },
+            
+            // --- LEGENDARY PERKS ---
+            { id: 6, name: "Quad Bonus", description: "Adds **chips:+400 Chips** for every **score:Four of a Kind** score. (Stackable)", cost: 400, rarity: "legendary", effect: { type: "flat_bonus", combo: "Four of a Kind", value: 400 }, minCycle: 4, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>` },
+            { id: 68, name: "Paired Up", description: "Each time you score a **score:Pair**, permanently increase the base score of Pairs by **score:+5** for this run. (Non-Stackable)", cost: 420, rarity: "legendary", effect: { type: "permanent_pair_boost", value: 5 }, minCycle: 4, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"></path></svg>` },
+            { id: 7, name: "Momentum Shift", description: "Your **reroll:first reroll** each round is **reroll:free**. (Non-Stackable)", cost: 450, rarity: "legendary", effect: { type: "free_first_reroll" }, minCycle: 3, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"></path></svg>` },
+            { id: 13, name: "Triple Six", description: "Adds **chips:+100 Chips** if you roll **score:Three of a Kind with 6s**. (Stackable)", cost: 500, rarity: "legendary", effect: { type: "specific_count_bonus", value: 100, combo: "Three of a Kind", pairValue: 6 }, minCycle: 4, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l-3.5 3.5a6 6 0 0 0-8.5 8.5L2 12l3.5 3.5a6 6 0 0 0 8.5 8.5L12 22l3.5-3.5a6 6 0 0 0 8.5-8.5L22 12l-3.5-3.5a6 6 0 0 0-8.5-8.5z"></path><path d="M12 22v-6.5"></path></svg>` },
+        ];
+        
+        // --- Payout Enhancements ---
+        const payoutEnhancements = {
+            3: [
+                { id: 301, name: "Full Lock Bonus", description: "Gain **chips:+250 Chips** if all dice are locked when scoring. (Stackable)", tier: 3, effect: { type: "locked_all_bonus", value: 250 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3"></path><path d="M12 12L9 9m6 0l-3 3"></path><path d="M9 15l3 3 3-3"></path></svg>` },
+                { id: 302, name: "The Absolute Die", description: "One random die is always treated as a **score:6** for combo scoring. (Non-Stackable)", tier: 3, effect: { type: "set_value_combo", value: 6 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path><path d="M12 6v6l4 2"></path></svg>` },
+                { id: 65, name: "Joker's Wild", description: "All dice with a value of **1** are considered **special:wild cards** for combo calculation. (Non-Stackable)", tier: 3, effect: { type: "wild_card", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l-3.5 3.5a6 6 0 0 0-8.5 8.5L2 12l3.5 3.5a6 6 0 0 0 8.5 8.5L12 22l3.5-3.5a6 6 0 0 0 8.5-8.5L22 12l-3.5-3.5a6 6 0 0 0-8.5-8.5z"></path><path d="M12 8v8"></path></svg>` },
+                { id: 304, name: "Mega Quad", description: "If you score a **score:Four of a Kind**, your base score is set to **score:2000 chips**. (Non-Stackable)", tier: 3, effect: { type: "set_base_score", combo: "Four of a Kind", value: 2000 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path><path d="M12 17.77V22"></path></svg>` },
+                { id: 305, name: "Final Frontier", description: "Gain **chips:+50 Chips** for every die that has the value **6**. (Stackable)", tier: 3, effect: { type: "value_count_bonus", value: 50, check: 6 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="12" r="3"></circle></svg>` },
+            ],
+            2: [
+                { id: 201, name: "Echoing Roll", description: "Every **score:Two Pair** score also grants the base score for **score:Three of a Kind**. (Non-Stackable)", tier: 2, effect: { type: "combo_chain", from: "Two Pair", to: "Three of a Kind" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M4 12l5-5m-5 5l5 5"></path></svg>` },
+                { id: 202, name: "Lucky Six", description: "If a **score:'6' die is locked**, add **chips:+50 Chips** to the final score. (Stackable)", tier: 2, effect: { type: "flat_round_bonus_value", value: 50, check: 6 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>` },
+                { id: 203, name: "Hyper Roll", description: "Adds **reroll:+2 Rerolls** to your starting rerolls each cycle. (Non-Stackable)", tier: 2, effect: { type: "reroll_boost", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L20.5 8"></path><path d="M20.49 15a9 9 0 0 1-14.85 3.36L3.5 16"></path></svg>` },
+                { id: 204, name: "Combo Insurance", description: "If you roll **score:'No Combo'**, you gain **chips:+50 Chips** instead of 0. (Stackable)", tier: 2, effect: { type: "combo_fail_safeguard", value: 50 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m14 10-4 4m0-4 4 4"></path></svg>` },
+                { id: 207, name: "Golden Reroll", description: "After scoring, there is a **special:5% chance** to not advance to the next round. (Non-Stackable)", tier: 2, effect: { type: "chance_to_repeat_round", chance: 0.05 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path><path d="M12 8a4 4 0 1 1-4 4h4"></path></svg>` },
+                { id: 206, name: "Two-Fold Bonus", description: "Scoring a **score:Pair** grants **mult:x2** base score if the pair's value is **2 or 4**. (Non-Stackable)", tier: 2, effect: { type: "specific_pair_mult", mult: 2, checkValues: [2, 4], combo: "Pair" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"></path><path d="M8 3H3v5"></path><path d="M12 22v-8.3a4 4 0 0 0-1.17-2.83L8.59 8.59a2 2 0 0 1 0-2.82L10.83 3.5a2 2 0 0 1 2.83 0l2.24 2.24a2 2 0 0 1 0 2.82l-2.24 2.24A4 4 0 0 0 12 13.7V22z"></path></svg>` },
+            ],
+            1: [
+                { id: 101, name: "Small Multiplier", description: "Multiplies the final score of the roll by **mult:x1.5**.", tier: 1, effect: { type: "overall_mult", value: 1.5 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"></path></svg>` },
+                { id: 102, name: "Free Cash", description: "Gain **chips:+150 Chips** immediately.", tier: 1, effect: { type: "chips_flat_bonus", value: 150 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path></svg>` },
+                { id: 103, name: "Reroll Prep", description: "Start the **first round** of the next cycle with **reroll:+3 Rerolls**.", tier: 1, effect: { type: "temp_reroll_boost", value: 3 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1z"></path><path d="M7 10v4"></path><path d="M12 10v4"></path><path d="M17 10v4"></path></svg>` },
+                { id: 104, name: "Discount Card", description: "All subsequent shop purchases are **shop:10% cheaper**. (Non-Stackable)", tier: 1, effect: { type: "shop_discount", value: 0.1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19-9.19a6 6 0 0 0-8.49 8.49l9.19 9.19a2 2 0 0 0 2.83 0l8.1-8.1a2 2 0 0 0 0-2.83z"></path><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"></line></svg>` },
+                { id: 105, name: "The Repeater", description: "The **special:first die you lock** each round rolls **special:twice** on the next reroll. (Non-Stackable)", tier: 1, effect: { type: "first_lock_reroll" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>` },
+                { id: 106, name: "Extra Die Slot", description: "Permanently adds a **special:6th die** to your rolling pool. (Max 6 dice total)", tier: 1, effect: { type: "extra_die" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 8v8m-4-4h8"></path></svg>` },
+                { id: 107, name: "Pair Escalation", description: "Scoring a **score:Pair** grants a permanent **chips:+2 Chip** bonus to all future Pair scores in this run. (Stackable effect)", tier: 1, effect: { type: "permanent_flat_boost", combo: "Pair", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14m-7-7h14"></path></svg>` },
+            ]
+        };
+        
+        // --- DOM Elements ---
+        const chipsDisplay = document.getElementById('chips-display');
+        const roundDisplay = document.getElementById('round-display');
+        const cycleDisplay = document.getElementById('cycle-display');
+        const rerollDisplay = document.getElementById('reroll-display');
+        const goalDisplay = document.getElementById('goal-display'); 
+        const diceContainer = document.getElementById('dice-container');
+        const currentComboP = document.getElementById('current-combo');
+        const comboScoreP = document.getElementById('combo-score');
+        const rollBtn = document.getElementById('roll-btn');
+        const shopBtn = document.getElementById('shop-btn'); 
+        const scoreBtn = document.getElementById('score-btn');
+        const payoutBtn = document.getElementById('payout-btn'); 
+        const shopModal = document.getElementById('shop-modal'); 
+        const modalChipsDisplay = document.getElementById('modal-chips');
+        const shopOptionsDiv = document.getElementById('shop-options'); 
+        const sellOptionsDiv = document.getElementById('sell-options'); 
+        const closeShopModalBtn = document.getElementById('close-shop-modal-btn'); 
+        const enhancementsListDiv = document.getElementById('enhancements-list');
+        const gameOverModal = document.getElementById('game-over-modal'); 
+        const chipsShortSpan = document.getElementById('chips-short'); 
+        const finalCycleSpan = document.getElementById('final-cycle'); 
+        const payoutSuccessModal = document.getElementById('payout-success-modal'); 
+        const paidGoalSpan = document.getElementById('paid-goal'); 
+        const payoutCycleDisplay = document.getElementById('payout-cycle-display'); 
+        const rewardOptionsDiv = document.getElementById('reward-options'); 
+        const discountDisplay = document.getElementById('discount-display');
+        const payoutBonusNote = document.getElementById('payout-bonus-note');
+        const replacementModal = document.getElementById('replacement-modal');
+        const newPerkNameSpan = document.getElementById('new-perk-name');
+        const newPerkTierSpan = document.getElementById('new-perk-tier');
+        const existingPerkTierSpan = document.getElementById('existing-perk-tier');
+        const perksToReplaceListDiv = document.getElementById('perks-to-replace-list');
+        const perksModal = document.getElementById('perks-modal');
+        const closePerksModalBtn = document.getElementById('close-perks-modal-btn');
+        const perksListBtn = document.getElementById('perks-list-btn');
+        const statsModal = document.getElementById('stats-modal');
+        const closeStatsModalBtn = document.getElementById('close-stats-modal-btn');
+        const statsBtn = document.getElementById('stats-btn');
+        const handsModal = document.getElementById('hands-modal');
+        const closeHandsModalBtn = document.getElementById('close-hands-modal-btn');
+        const handsListBtn = document.getElementById('hands-list-btn');
+        const achievementsModal = document.getElementById('achievements-modal');
+        const closeAchievementsModalBtn = document.getElementById('close-achievements-modal-btn');
+        const achievementsBtn = document.getElementById('achievements-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const restartConfirmModal = document.getElementById('restart-confirm-modal');
+        const cancelRestartBtn = document.getElementById('cancel-restart-btn');
+        const confirmRestartBtn = document.getElementById('confirm-restart-btn');
+        const tooltip = document.getElementById('tooltip');
+
+        /**
+         * Formats perk descriptions, converting **type:text** to color-coded <strong>text</strong>.
+         */
+        function formatDescription(text) {
+            return text.replace(/\*\*(\w+):(.*?)\*\*/g, (match, type, content) => {
+                let colorClass = 'text-yellow-300'; // Default color
+                switch (type) {
+                    case 'chips':
+                        colorClass = 'text-green-400';
+                        break;
+                    case 'reroll':
+                        colorClass = 'text-blue-400';
+                        break;
+                    case 'mult':
+                        colorClass = 'text-purple-400';
+                        break;
+                    case 'score':
+                        colorClass = 'text-orange-400';
+                        break;
+                    case 'special':
+                        colorClass = 'text-pink-400';
+                        break;
+                    case 'shop':
+                        colorClass = 'text-cyan-400';
+                        break;
+                }
+                return `<strong class="${colorClass}">${content}</strong>`;
+            });
+        }
+
+        /**
+         * Returns a Tailwind CSS color class based on perk rarity.
+         */
+        function getRarityColorClass(rarity) {
+            switch (rarity) {
+                case 'common': return 'text-green-400';
+                case 'uncommon': return 'text-blue-400';
+                case 'rare': return 'text-purple-400';
+                case 'legendary': return 'text-orange-400';
+                default: return 'text-gray-300';
+            }
+        }
+        
+        /**
+         * Returns a Tailwind CSS border color class based on perk rarity.
+         */
+        function getRarityBorderClass(rarity) {
+            switch (rarity) {
+                case 'common': return 'border-green-400';
+                case 'uncommon': return 'border-blue-400';
+                case 'rare': return 'border-purple-400';
+                case 'legendary': return 'border-orange-400';
+                default: return 'border-gray-500';
+            }
+        }
+
+        /**
+         * Returns a Tailwind CSS color class based on perk tier.
+         */
+        function getTierColorClass(tier) {
+            switch (tier) {
+                case 1: return 'text-yellow-400';
+                case 2: return 'text-pink-400';
+                case 3: return 'text-red-400';
+                default: return 'text-gray-300';
+            }
+        }
+        
+        /**
+         * Returns a Tailwind CSS border color class based on perk tier.
+         */
+        function getTierBorderClass(tier) {
+            switch (tier) {
+                case 1: return 'border-yellow-400';
+                case 2: return 'border-pink-400';
+                case 3: return 'border-red-400';
+                default: return 'border-gray-500';
+            }
+        }
+
+        /**
+         * Saves the current game state to localStorage.
+         */
+        function saveGameState() {
+            localStorage.setItem('aleaDeckSaveData', JSON.stringify(gameState));
+        }
+
+        /**
+         * Saves the persistent stats to localStorage.
+         */
+        function savePersistentStats() {
+            localStorage.setItem('aleaDeckGlobalStats', JSON.stringify(persistentStats));
+        }
+
+        /**
+         * Saves achievement progress to localStorage.
+         */
+        function saveAchievements() {
+            const dataToSave = {
+                progress: achievementProgress,
+                diceSkin: selectedDiceSkin,
+                diceEffect: selectedDiceEffect,
+                rollBtnStyle: selectedRollBtnStyle,
+                backgroundStyle: selectedBackgroundStyle
+            };
+            localStorage.setItem('aleaDeckAchievements', JSON.stringify(dataToSave));
+        }
+
+        /**
+         * Loads the game state from localStorage.
+         */
+        function loadGameState() {
+            const savedData = localStorage.getItem('aleaDeckSaveData');
+            if (savedData) {
+                try {
+                    const loadedState = JSON.parse(savedData);
+                    // Start with a fresh default state to ensure any new properties from game updates are included.
+                    const freshState = getInitialState();
+                    
+                    // Use spread syntax for a shallow merge of the main state.
+                    // This handles new/removed top-level properties gracefully.
+                    let mergedState = { ...freshState, ...loadedState };
+
+                    // Manually perform a deep merge for nested objects to prevent them from being completely overwritten.
+                    // This ensures that new sub-properties in updates are not lost when loading an old save.
+                    if (loadedState.stats) {
+                        mergedState.stats = { ...freshState.stats, ...loadedState.stats };
+                    }
+                     if (loadedState.stats && loadedState.stats.combosScored) {
+                        mergedState.stats.combosScored = { ...freshState.stats.combosScored, ...loadedState.stats.combosScored };
+                    }
+                    if (loadedState.payoutSuccessCount) {
+                        mergedState.payoutSuccessCount = { ...freshState.payoutSuccessCount, ...loadedState.payoutSuccessCount };
+                    }
+                    
+                    gameState = mergedState;
+
+                } catch (error) {
+                    console.error("Could not load game state from localStorage. Starting a fresh run.", error);
+                    // If there's an error (e.g., corrupted data), fall back to the initial state.
+                    gameState = getInitialState();
+                }
+            }
+        }
+
+        /**
+         * Loads the persistent stats from localStorage.
+         */
+        function loadPersistentStats() {
+            const savedStats = localStorage.getItem('aleaDeckGlobalStats');
+            if (savedStats) {
+                try {
+                    const loadedStats = JSON.parse(savedStats);
+                    persistentStats = { ...getInitialPersistentStats(), ...loadedStats };
+                    // Deep merge for nested objects in persistent stats
+                    if(loadedStats.totalCombosScored){
+                         persistentStats.totalCombosScored = { ...getInitialPersistentStats().totalCombosScored, ...loadedStats.totalCombosScored };
+                    }
+
+                } catch (error) {
+                    console.error("Could not load persistent stats.", error);
+                }
+            }
+        }
+        
+        /**
+         * Loads achievement progress from localStorage.
+         */
+        function loadAchievements() {
+            const savedData = localStorage.getItem('aleaDeckAchievements');
+            if (savedData) {
+                try {
+                    const loadedData = JSON.parse(savedData);
+                    achievementProgress = loadedData.progress || {};
+                    selectedDiceSkin = loadedData.diceSkin || 'default';
+                    selectedDiceEffect = loadedData.diceEffect || 'none';
+                    selectedRollBtnStyle = loadedData.rollBtnStyle || 'default';
+                    selectedBackgroundStyle = loadedData.backgroundStyle || 'default';
+                } catch (error) {
+                    console.error("Could not load achievements.", error);
+                }
+            }
+        }
+
+        function getInitialPersistentStats() {
+            return {
+                highestCycleReached: 0,
+                highestScoreInOneRound: 0,
+                totalRunsStarted: 0,
+                totalCombosScored: {
+                    "Pair": 0, "Two Pair": 0, "Three of a Kind": 0, "Straight": 0, "Full House": 0, 
+                    "Four of a Kind": 0, "Five of a Kind": 0
+                },
+                totalPerksBought: 0
+            };
+        }
+
+
+        /**
+         * Generates the randomized shop selection (3 items).
+         */
+        function generateShop() {
+            const purchasedIds = gameState.enhancements.map(e => e.id);
+            // Non-stackable perks are any perk that does not explicitly say "(Stackable)"
+            const nonStackableIds = shopEnhancements
+                .filter(e => !e.description.includes("(Stackable)") && purchasedIds.includes(e.id))
+                .map(e => e.id);
+
+            const available = shopEnhancements.filter(enh => {
+                if (nonStackableIds.includes(enh.id)) return false;
+                // NEW: Check if perk is available in the current cycle
+                if (enh.minCycle && gameState.cycle < enh.minCycle) return false;
+                // Special check for Momentum Shift vs Consistent Roller
+                if (enh.id === 38 && gameState.enhancements.some(e => e.id === 7)) return false;
+                if (enh.id === 7 && gameState.enhancements.some(e => e.id === 38)) return false;
+                return true;
+            });
+            
+            // NEW: Weighted random selection to make commons more likely early on
+            const weights = available.map(enh => {
+                switch(enh.rarity) {
+                    case 'legendary': return 1;
+                    case 'rare': return 3;
+                    case 'uncommon': return 6;
+                    default: return 10;
+                }
+            });
+
+            const weightedRandom = (items, itemWeights) => {
+                let i;
+                let totalWeight = 0;
+                for (i = 0; i < itemWeights.length; i++) {
+                    totalWeight += itemWeights[i];
+                }
+                let random = Math.random() * totalWeight;
+                for (i = 0; i < items.length; i++) {
+                    if (random < itemWeights[i]) {
+                        return items[i];
+                    }
+                    random -= itemWeights[i];
+                }
+                return items[items.length - 1]; // Fallback
+            };
+
+            const shopSelection = new Set();
+            while(shopSelection.size < 3 && available.length > 0) {
+                const selected = weightedRandom(available, weights);
+                shopSelection.add(selected);
+            }
+            
+            gameState.currentShop = Array.from(shopSelection).map(enh => ({ ...enh, purchased: false }));
+        }
+        
+        /**
+         * Calculates the total discount percentage.
+         */
+        function getDiscountFactor() {
+            return gameState.enhancements
+                .filter(e => e.effect.type === "shop_discount")
+                .reduce((total, enh) => total + enh.effect.value, 0);
+        }
+
+        /**
+         * Converts a die value (1-6) into an emoji.
+         */
+        function getDieEmoji(value) {
+            const emojis = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+            return emojis[value] || '🎲';
+        }
+
+        /**
+         * Simulates rolling a single die.
+         */
+        function rollSingleDie() {
+            return Math.floor(Math.random() * 6) + 1;
+        }
+
+        /**
+         * Calculates the score for a specific combo type.
+         */
+        function calculateSpecificComboScore(combo, baseScore, actualValues, counts) {
+            // Add the value of the scoring dice to the base score
+            let diceValueBonus = 0;
+            const countEntries = Object.entries(counts).map(([val, count]) => ({ val: parseInt(val), count }));
+
+            switch (combo) {
+                case "Five of a Kind":
+                    const five = countEntries.find(e => e.count >= 5);
+                    if (five) diceValueBonus += five.val * 5;
+                    break;
+                case "Four of a Kind":
+                    const four = countEntries.find(e => e.count >= 4);
+                    if (four) diceValueBonus += four.val * 4;
+                    break;
+                case "Full House":
+                    const three = countEntries.find(e => e.count >= 3);
+                    const pairForFull = countEntries.find(e => e.count >= 2 && e.val !== three.val);
+                    if (three && pairForFull) diceValueBonus += (three.val * 3) + (pairForFull.val * 2);
+                    break;
+                case "Straight":
+                    const uniqueVals = [...new Set(actualValues)].sort((a,b) => a - b);
+                    const straightLength = gameState.enhancements.some(e => e.effect.type === "short_straight") ? 4 : 5;
+                    for (let i = 0; i <= uniqueVals.length - straightLength; i++) {
+                        let isSequence = true;
+                        let sequenceSum = uniqueVals[i];
+                        for (let j = 0; j < straightLength - 1; j++) {
+                            if (uniqueVals[i+j+1] !== uniqueVals[i+j] + 1) {
+                                isSequence = false;
+                                break;
+                            }
+                            sequenceSum += uniqueVals[i+j+1];
+                        }
+                        if (isSequence) {
+                            diceValueBonus = sequenceSum;
+                            break;
+                        }
+                    }
+                    break;
+                case "Three of a Kind":
+                    const threeOfAKind = countEntries.find(e => e.count >= 3);
+                    if (threeOfAKind) diceValueBonus += threeOfAKind.val * 3;
+                    break;
+                case "Two Pair":
+                    const pairs = countEntries.filter(e => e.count >= 2);
+                    if (pairs.length >= 2) diceValueBonus += (pairs[0].val * 2) + (pairs[1].val * 2);
+                    break;
+                case "Pair":
+                    const pair = countEntries.find(e => e.count >= 2);
+                    if (pair) diceValueBonus += pair.val * 2;
+                    break;
+            }
+            
+            let finalScore = baseScore + diceValueBonus;
+            let finalMultiplier = 1;
+            let flatScoreAdd = 0;
+            const lockedDice = gameState.dice.filter(d => d.locked);
+            const lockedDiceValues = lockedDice.map(d => d.value);
+            const scalingBonusMult = gameState.enhancements.find(e => e.effect.type === "scaling_bonus_mult");
+            
+            const setBaseScore = gameState.enhancements.find(e => e.effect.type === "set_base_score" && e.effect.combo === combo);
+            if (setBaseScore) { finalScore = setBaseScore.effect.value; }
+            
+            const comboChain = gameState.enhancements.find(e => e.effect.type === "combo_chain" && e.effect.from === combo);
+            if (comboChain) { 
+                finalScore += getBaseScore(comboChain.effect.to); 
+            }
+
+            gameState.enhancements.forEach(enh => {
+                switch(enh.effect.type) {
+                    case "flat_bonus":
+                        if (enh.effect.combo === combo) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "mult_bonus":
+                        if (enh.effect.combo === combo) finalMultiplier *= enh.effect.value;
+                        break;
+                    case "specific_pair_mult":
+                        if (enh.effect.combo === combo) {
+                            const pairCounts = Object.entries(counts).filter(([v, c]) => c >= 2).map(([v]) => parseInt(v));
+                            if (pairCounts.some(v => enh.effect.checkValues.includes(v))) { 
+                                finalMultiplier *= enh.effect.mult; 
+                            }
+                        }
+                        break;
+                    case "specific_count_bonus":
+                        if (combo === enh.effect.combo) {
+                            if (counts[enh.effect.pairValue] >= 3) { flatScoreAdd += enh.effect.value; }
+                        }
+                        break;
+                    case "locked_die_bonus":
+                        flatScoreAdd += lockedDice.length * enh.effect.value;
+                        break;
+                    case "value_count_bonus":
+                        const valueCount = lockedDiceValues.filter(v => v === enh.effect.check).length;
+                        flatScoreAdd += valueCount * enh.effect.value;
+                        break;
+                    case "chips_scaling_bonus":
+                        let chipBonus = Math.floor(gameState.chips / enh.effect.scale) * enh.effect.value;
+                        if(scalingBonusMult) chipBonus *= scalingBonusMult.effect.value;
+                        flatScoreAdd += chipBonus;
+                        break;
+                    case "even_locked_bonus":
+                        if (lockedDice.length > 0 && lockedDiceValues.every(v => v % 2 === 0)) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "odd_locked_bonus":
+                        if (lockedDice.length > 0 && lockedDiceValues.every(v => v % 2 !== 0)) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "locked_count_bonus":
+                        if (lockedDice.length === enh.effect.count) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "locked_all_bonus":
+                        if (gameState.dice.every(d => d.locked)) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "zero_reroll_bonus":
+                        if (gameState.rerolls === 0) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "max_reroll_bonus":
+                        let baseRerolls = 2 + gameState.enhancements.filter(e => e.effect.type === "reroll_boost").reduce((acc, e) => acc + e.effect.value, 0);
+                        if (gameState.rerolls === baseRerolls) flatScoreAdd += enh.effect.value;
+                        break;
+                    case "reroll_usage_bonus":
+                        let initialRerolls = 2 + gameState.enhancements.filter(e => e.effect.type === "reroll_boost").reduce((acc, e) => acc + e.effect.value, 0);
+                        let usedRerolls = initialRerolls - gameState.rerolls;
+                        if(gameState.isFirstRoll) usedRerolls = 0;
+                        flatScoreAdd += usedRerolls * enh.effect.value;
+                        break;
+                    case "two_pair_sum_bonus":
+                         if (combo === 'Two Pair') {
+                            const pairs = Object.entries(counts).filter(([,c]) => c >= 2).map(([v]) => parseInt(v));
+                            if (pairs.length >= 2 && pairs[0] + pairs[1] === enh.effect.sum) {
+                                flatScoreAdd += enh.effect.value;
+                            }
+                         }
+                         break;
+                }
+            });
+            
+            finalScore += flatScoreAdd;
+            
+            gameState.enhancements.forEach(enh => {
+                if (enh.effect.type === "score_scaling_bonus") {
+                    let scalingAdd = Math.floor(finalScore / enh.effect.scale) * enh.effect.value;
+                    if(scalingBonusMult) scalingAdd *= scalingBonusMult.effect.value;
+                    finalScore += scalingAdd;
+                }
+            });
+
+            const zeroRerollMult = gameState.enhancements.find(e => e.effect.type === "zero_reroll_mult");
+            if(zeroRerollMult && gameState.rerolls === 0) {
+                finalMultiplier *= zeroRerollMult.effect.value;
+            }
+            
+            finalScore *= finalMultiplier;
+
+            const overallMult = gameState.enhancements.find(e => e.effect.type === "overall_mult");
+            if (overallMult) { finalScore *= overallMult.effect.value; }
+
+            return { combo, score: finalScore };
+        }
+        
+        const getBaseScore = (comboName) => {
+            let base = gameState.baseScores[comboName] || 0;
+            // Apply permanent boosts first
+            gameState.enhancements.forEach(enh => {
+                if (enh.effect.type === 'permanent_pair_boost' && comboName === 'Pair' && enh.effect.currentBonus) {
+                    base += enh.effect.currentBonus;
+                }
+                 if (enh.effect.type === 'permanent_flat_boost' && comboName === enh.effect.combo && enh.effect.currentBonus) {
+                    base += enh.effect.currentBonus;
+                }
+            });
+            // Then apply standard base score increases
+            gameState.enhancements.forEach(enh => {
+                if (enh.effect.type === 'base_score_increase' && enh.effect.combo === comboName) {
+                    base += enh.effect.value;
+                }
+            });
+            return base;
+        };
+
+        /**
+         * Calculates the best possible score from the current dice.
+         */
+        function getBestScoreDetails(values) {
+            let actualValues = [...values];
+
+            const obsidianDie = gameState.enhancements.find(e => e.effect.type === "value_transformation");
+            if(obsidianDie) {
+                actualValues = actualValues.map(v => v === obsidianDie.effect.from ? obsidianDie.effect.to : v);
+            }
+            
+            const absoluteDie = gameState.enhancements.find(e => e.effect.type === "set_value_combo");
+            if (absoluteDie) {
+                actualValues[0] = absoluteDie.effect.value;
+            }
+            
+            let counts = {};
+            actualValues.forEach(val => { counts[val] = (counts[val] || 0) + 1; });
+
+            const wildCard = gameState.enhancements.find(e => e.effect.type === "wild_card");
+            if (wildCard && counts[wildCard.effect.value]) {
+                const wildCount = counts[wildCard.effect.value];
+                delete counts[wildCard.effect.value];
+                const highestCountKey = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, null);
+                if (highestCountKey) {
+                    counts[highestCountKey] += wildCount;
+                } else { // All dice were wild cards
+                    counts[wildCard.effect.value] = wildCount;
+                }
+            }
+
+            const sortedCounts = Object.values(counts).sort((a, b) => b - a);
+            const uniqueValues = Object.keys(counts).map(Number).sort((a, b) => a - b);
+            
+            const potentialOutcomes = [];
+
+            const comboTransform = gameState.enhancements.find(e => e.effect.type === "combo_transformation");
+
+            if (sortedCounts[0] >= 5) potentialOutcomes.push({ combo: "Five of a Kind", baseScore: getBaseScore("Five of a Kind") });
+            if (sortedCounts[0] >= 4) potentialOutcomes.push({ combo: "Four of a Kind", baseScore: getBaseScore("Four of a Kind") });
+            if (sortedCounts.length >= 2 && sortedCounts[0] >= 3 && sortedCounts.find((c, i) => i > 0 && c >= 2)) potentialOutcomes.push({ combo: "Full House", baseScore: getBaseScore("Full House") });
+            
+            let isStraight = false;
+            const straightLength = gameState.enhancements.some(e => e.effect.type === "short_straight") ? 4 : 5;
+            if (uniqueValues.length >= straightLength) {
+                for (let i = 0; i <= uniqueValues.length - straightLength; i++) {
+                    let consecutive = true;
+                    for (let j = 0; j < straightLength - 1; j++) {
+                        if (uniqueValues[i+j+1] !== uniqueValues[i+j] + 1) {
+                            consecutive = false;
+                            break;
+                        }
+                    }
+                    if (consecutive) {
+                        isStraight = true;
+                        break;
+                    }
+                }
+            }
+            if (isStraight) potentialOutcomes.push({ combo: "Straight", baseScore: getBaseScore("Straight") });
+            
+            if (sortedCounts[0] >= 3) potentialOutcomes.push({ combo: "Three of a Kind", baseScore: getBaseScore("Three of a Kind") });
+            
+            const pairsCount = sortedCounts.filter(c => c >= 2).length;
+            if (pairsCount >= 2) potentialOutcomes.push({ combo: "Two Pair", baseScore: getBaseScore("Two Pair") });
+            if (pairsCount >= 1) {
+                let comboName = "Pair";
+                let base = getBaseScore("Pair");
+                if (comboTransform && comboTransform.effect.from === "Pair") {
+                    comboName = comboTransform.effect.to;
+                    base = getBaseScore(comboName);
+                }
+                potentialOutcomes.push({ combo: comboName, baseScore: base });
+            }
+            
+            if (potentialOutcomes.length === 0) {
+                const comboInsurance = gameState.enhancements.find(e => e.effect.type === "combo_fail_safeguard");
+                let bonus = 0;
+                gameState.enhancements.forEach(enh => {
+                    if(enh.effect.type === "flat_bonus" && enh.effect.combo === "No Combo") bonus += enh.effect.value;
+                });
+                const finalScore = (comboInsurance ? comboInsurance.effect.value : 0) + bonus;
+                return { combo: finalScore > 0 ? "No Combo (Insured)" : "No Combo", score: finalScore };
+            }
+            
+            let maxScore = -1;
+            let winningCombo = "No Combo";
+            
+            const uniqueCombos = [...new Set(potentialOutcomes.map(o => o.combo))];
+            uniqueCombos.forEach(comboName => {
+                const outcome = potentialOutcomes.find(o => o.combo === comboName); 
+                if (!outcome) return;
+                const { score: currentScore } = calculateSpecificComboScore(comboName, outcome.baseScore, actualValues, counts);
+                if (currentScore > maxScore) {
+                    maxScore = currentScore;
+                    winningCombo = comboName;
+                }
+            });
+            
+            return { combo: winningCombo, score: maxScore };
+        }
+
+        /**
+         * Updates all UI elements based on the current game state.
+         */
+        function updateUI() {
+            chipsDisplay.textContent = gameState.chips;
+            rerollDisplay.textContent = gameState.rerolls > 500 ? '∞' : gameState.rerolls; 
+            roundDisplay.textContent = gameState.round;
+            cycleDisplay.textContent = gameState.cycle;
+            goalDisplay.textContent = gameState.currentCycleGoal;
+            
+            const discountFactor = getDiscountFactor();
+            discountDisplay.textContent = discountFactor > 0 ? `Shop prices are discounted by ${Math.round(discountFactor * 100)}%!` : '';
+
+            // Update Roll button style
+            const currentRollBtnStyle = rollButtonStyles[selectedRollBtnStyle] || rollButtonStyles['default'];
+            rollBtn.className = `w-full py-3 rounded-xl text-xl font-bold transition-all disabled:opacity-50 ${currentRollBtnStyle.class}`;
+
+
+            diceContainer.innerHTML = '';
+            const canToggleLock = !gameState.isRolling && !gameState.roundLockedDown && !gameState.isFirstRoll;
+            gameState.dice.forEach((die, index) => {
+                const dieEl = document.createElement('div');
+                const skin = diceSkins[selectedDiceSkin] || diceSkins['default'];
+                dieEl.className = `die shadow-lg font-mono ${skin.class}`; // Apply skin class
+                
+                // Add emoji content, wrapped to be above sparkles
+                dieEl.innerHTML = `<span class="relative z-10">${getDieEmoji(die.value)}</span>`;
+
+                if (die.locked) dieEl.classList.add('locked');
+                if (!canToggleLock) dieEl.classList.add('die-disabled');
+                if (index === gameState.repeaterTargetIndex) dieEl.style.outline = '4px solid #34d399'; 
+                if (canToggleLock) dieEl.addEventListener('click', () => toggleLock(index));
+                
+                // Add sparkle effect if selected
+                const effect = diceEffects[selectedDiceEffect];
+                if (effect && effect.class) {
+                    const sparkleContainer = document.createElement('div');
+                    sparkleContainer.className = 'die-sparkle-container';
+                    dieEl.classList.add(effect.class);
+                    
+                    for (let i = 0; i < 3; i++) { // 3 sparkles per die
+                        const sparkle = document.createElement('div');
+                        sparkle.className = 'sparkle';
+                        sparkle.style.left = `${Math.random() * 100}%`;
+                        sparkle.style.top = `${Math.random() * 100}%`;
+                        sparkle.style.animationDelay = `${Math.random() * 2.5}s`;
+                        sparkle.style.animationDuration = `${1.5 + Math.random() * 1.5}s`;
+                        sparkleContainer.appendChild(sparkle);
+                    }
+                    dieEl.appendChild(sparkleContainer);
+                }
+
+                diceContainer.appendChild(dieEl);
+            });
+
+            const { combo, score } = getBestScoreDetails(gameState.dice.map(d => d.value));
+            if (gameState.isFirstRoll) {
+                currentComboP.textContent = 'Roll to start!';
+                comboScoreP.classList.add('hidden');
+            } else {
+                currentComboP.textContent = `Best Combo: ${combo}`; 
+                comboScoreP.textContent = `Potential Score: +${Math.round(score)} Chips`; 
+                comboScoreP.classList.remove('hidden');
+            }
+
+            const isRolling = gameState.isRolling;
+            const isFirstRoll = gameState.isFirstRoll;
+            const rerollsLeft = gameState.rerolls;
+            const isPaid = gameState.payoutSuccessful;
+            const canAfford = gameState.chips >= gameState.currentCycleGoal;
+            const isRoundLockedDown = gameState.roundLockedDown; 
+
+            if (isRolling || isRoundLockedDown) {
+                rollBtn.disabled = true;
+                rollBtn.textContent = isRoundLockedDown ? 'ROUND ENDED' : 'Rolling...'; 
+                shopBtn.disabled = isRoundLockedDown;
+                scoreBtn.disabled = true;
+                payoutBtn.disabled = false; 
+            } else {
+                rollBtn.disabled = rerollsLeft === 0 && !isFirstRoll;
+                rollBtn.textContent = isFirstRoll ? 'START ROLL' : (rerollsLeft > 0 ? `REROLL (${rerollsLeft})` : 'NO REROLLS'); 
+                shopBtn.disabled = false;
+                scoreBtn.disabled = isFirstRoll || gameState.hasScoredThisRound; 
+                payoutBtn.disabled = isPaid || !canAfford; 
+            }
+            
+            payoutBtn.className = 'py-3 rounded-xl font-bold'; // Reset classes
+            if (isPaid) {
+                payoutBtn.textContent = 'PAID'; 
+                payoutBtn.classList.add('bg-gray-700');
+            } else if (isRoundLockedDown && !canAfford) {
+                payoutBtn.textContent = `PAYOUT (FAIL?)`; 
+                payoutBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                payoutBtn.disabled = false; 
+            } else if (!canAfford) {
+                payoutBtn.textContent = `GOAL (${gameState.currentCycleGoal}C)`; 
+                payoutBtn.classList.add('bg-gray-700');
+            } else if (gameState.payoutReady) {
+                payoutBtn.textContent = `CONFIRM (-${gameState.currentCycleGoal}C)`; 
+                payoutBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            } else {
+                payoutBtn.textContent = `PAYOUT (-${gameState.currentCycleGoal}C)`;
+                payoutBtn.classList.add('btn-payout');
+            }
+
+            // --- NEW: Enhancement Icon Rendering Logic ---
+            enhancementsListDiv.innerHTML = '';
+            if (gameState.enhancements.length === 0) {
+                 enhancementsListDiv.innerHTML = '<p class="text-center text-gray-500 italic p-4">No Enhancements yet.</p>';
+            } else {
+                const perkCounts = {};
+                gameState.enhancements.forEach(enh => {
+                    if (perkCounts[enh.id]) {
+                        perkCounts[enh.id].count++;
+                    } else {
+                        perkCounts[enh.id] = { perk: enh, count: 1 };
+                    }
+                });
+
+                Object.values(perkCounts).forEach(({ perk, count }) => {
+                    const iconWrapper = document.createElement('div');
+                    const borderColor = perk.tier ? getTierBorderClass(perk.tier) : getRarityBorderClass(perk.rarity);
+                    iconWrapper.className = `enhancement-icon border-2 ${borderColor}`;
+                    
+                    iconWrapper.innerHTML = perk.icon || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
+
+                    if (count > 1) {
+                        const countEl = document.createElement('span');
+                        countEl.className = 'enhancement-count';
+                        countEl.textContent = count;
+                        iconWrapper.appendChild(countEl);
+                    }
+
+                    iconWrapper.addEventListener('mouseenter', (event) => {
+                        const isPayoutPerk = perk.tier;
+                        const colorClass = isPayoutPerk ? getTierColorClass(perk.tier) : getRarityColorClass(perk.rarity);
+                        let tierText = '';
+                        if (isPayoutPerk) {
+                           tierText = `<span class="text-xs text-blue-300 ml-2">T${perk.tier} (${gameState.payoutSuccessCount[perk.tier]}/${gameState.maxPerks[perk.tier]})</span>`;
+                        }
+
+                        tooltip.innerHTML = `
+                            <p class="font-bold text-lg ${colorClass} mb-1 flex items-center">${perk.name} ${tierText}</p>
+                            <p class="text-sm text-gray-300">${formatDescription(perk.description)}</p>
+                        `;
+                        tooltip.classList.remove('hidden');
+                    });
+                    
+                    iconWrapper.addEventListener('mousemove', (event) => {
+                         // Position tooltip above the cursor and center it.
+                        const tooltipRect = tooltip.getBoundingClientRect();
+                        let top = event.clientY - tooltipRect.height - 15; // 15px offset above cursor
+                        let left = event.clientX - (tooltipRect.width / 2); // Center horizontally
+
+                        // Prevent tooltip from going off-screen on the left and right
+                        if (left < 5) {
+                            left = 5;
+                        }
+                        if (left + tooltipRect.width > window.innerWidth - 5) {
+                            left = window.innerWidth - tooltipRect.width - 5;
+                        }
+
+                        // Prevent tooltip from going off-screen on top (flips below if needed)
+                        if (top < 5) {
+                            top = event.clientY + 25;
+                        }
+
+                        tooltip.style.left = `${left}px`;
+                        tooltip.style.top = `${top}px`;
+                    });
+
+                    iconWrapper.addEventListener('mouseleave', () => {
+                        // On desktop, hide the tooltip if the mouse leaves, unless it was "pinned" by a click
+                        if (!tooltip.classList.contains('persistent')) {
+                            tooltip.classList.add('hidden');
+                        }
+                    });
+
+                    iconWrapper.addEventListener('click', (event) => {
+                        event.stopPropagation(); // Prevent the body click listener from firing immediately
+
+                        // Toggle a 'persistent' state. This makes it stick on mobile/click.
+                        const isNowPersistent = tooltip.classList.toggle('persistent');
+
+                        if (isNowPersistent) {
+                            // If we just made it persistent, ensure it's visible and populated.
+                            // This is crucial for touch devices where 'mouseenter' may not fire.
+                            const isPayoutPerk = perk.tier;
+                            const colorClass = isPayoutPerk ? getTierColorClass(perk.tier) : getRarityColorClass(perk.rarity);
+                            let tierText = '';
+                            if (isPayoutPerk) {
+                               tierText = `<span class="text-xs text-blue-300 ml-2">T${perk.tier} (${gameState.payoutSuccessCount[perk.tier]}/${gameState.maxPerks[perk.tier]})</span>`;
+                            }
+
+                            tooltip.innerHTML = `
+                                <p class="font-bold text-lg ${colorClass} mb-1 flex items-center">${perk.name} ${tierText}</p>
+                                <p class="text-sm text-gray-300">${formatDescription(perk.description)}</p>
+                            `;
+                            tooltip.classList.remove('hidden');
+                        } else {
+                            // If we just toggled it off, hide it immediately.
+                            tooltip.classList.add('hidden');
+                        }
+                    });
+
+                    enhancementsListDiv.appendChild(iconWrapper);
+                });
+            }
+        }
+
+        function toggleLock(index) {
+            if (gameState.isRolling || gameState.roundLockedDown || (gameState.rerolls === 0 && !gameState.isFirstRoll)) return; 
+            const die = gameState.dice[index];
+            const isLocking = !die.locked; 
+            const repeater = gameState.enhancements.find(e => e.id === 105);
+            if (isLocking && repeater && gameState.repeaterTargetIndex === -1) {
+                gameState.repeaterTargetIndex = index;
+            }
+            die.locked = isLocking;
+            gameState.payoutReady = false;
+            updateUI();
+        }
+
+        async function handleRoll() {
+            if ((gameState.rerolls === 0 && !gameState.isFirstRoll) || gameState.roundLockedDown) return;
+            gameState.isRolling = true;
+            gameState.payoutReady = false; 
+            updateUI();
+            
+            const repeater = gameState.enhancements.find(e => e.id === 105);
+            let targetDie = repeater && gameState.repeaterTargetIndex !== -1 ? gameState.dice[gameState.repeaterTargetIndex] : null;
+
+            const rollInterval = setInterval(() => {
+                gameState.dice.forEach(die => { if (!die.locked) die.value = rollSingleDie(); });
+                if (targetDie && !targetDie.locked) targetDie.value = rollSingleDie(); // First part of repeater
+                updateUI(); 
+            }, 80);
+
+            setTimeout(() => {
+                clearInterval(rollInterval);
+                gameState.dice.forEach(die => { if (!die.locked) die.value = rollSingleDie(); });
+
+                // Handle reroll consumption
+                const momentumShift = gameState.enhancements.find(e => e.effect.type === 'free_first_reroll');
+                const simpleFreeReroll = gameState.enhancements.find(e => e.effect.type === 'free_first_reroll_simple');
+                let usedFreeReroll = false;
+
+                if ((momentumShift || simpleFreeReroll) && !gameState.freeRerollUsedThisRound) {
+                    gameState.freeRerollUsedThisRound = true;
+                    usedFreeReroll = true;
+                }
+
+                if (!gameState.isFirstRoll && !usedFreeReroll) {
+                    gameState.rerolls--;
+                    gameState.stats.rerollsUsed++;
+                }
+
+                gameState.isFirstRoll = false;
+                gameState.isRolling = false;
+                gameState.repeaterTargetIndex = -1;
+                updateUI();
+                saveGameState(); // Save after rolling
+            }, 800);
+        }
+
+        function scoreRound() {
+            if (gameState.isFirstRoll || gameState.hasScoredThisRound || gameState.roundLockedDown) return; 
+            
+            const initialRerolls = gameState.rerolls;
+
+            gameState.hasScoredThisRound = true; 
+            
+            const { combo, score } = getBestScoreDetails(gameState.dice.map(d => d.value));
+            let totalScore = Math.round(score);
+            
+            // Apply permanent boosts after scoring
+            gameState.enhancements.forEach(enh => {
+                if (enh.effect.type === 'permanent_pair_boost' && combo === 'Pair') {
+                    if (!enh.effect.currentBonus) enh.effect.currentBonus = 0;
+                    enh.effect.currentBonus += enh.effect.value;
+                }
+                 if (enh.effect.type === 'permanent_flat_boost' && combo === enh.effect.combo) {
+                    if (!enh.effect.currentBonus) enh.effect.currentBonus = 0;
+                    enh.effect.currentBonus += enh.effect.value;
+                }
+                 if (enh.effect.type === 'reroll_on_combo' && enh.effect.combos.includes(combo)) {
+                    // This bonus applies to the *next* round, handled in resetRerolls/next round logic
+                 }
+            });
+
+            gameState.enhancements.forEach(enh => {
+                if (enh.effect.type === "flat_round_bonus") {
+                    totalScore += enh.effect.value;
+                } else if (enh.effect.type === "flat_round_bonus_value") {
+                    const lockedDiceValues = gameState.dice.filter(d => d.locked).map(d => d.value);
+                    if (lockedDiceValues.includes(enh.effect.check)) { 
+                        totalScore += enh.effect.value; 
+                    }
+                } else if(enh.effect.type === "round_specific_bonus" && enh.effect.round === gameState.round) {
+                    totalScore += enh.effect.value;
+                }
+            });
+            gameState.chips += totalScore;
+            gameState.stats.totalChipsEarned += totalScore;
+
+            if (totalScore > gameState.stats.highestRoundScore) {
+                gameState.stats.highestRoundScore = totalScore;
+            }
+
+            if (totalScore > persistentStats.highestScoreInOneRound) {
+                persistentStats.highestScoreInOneRound = totalScore;
+                savePersistentStats();
+            }
+
+            if (combo !== "No Combo (Insured)" && combo !== "No Combo") {
+                 persistentStats.totalCombosScored[combo]++;
+            }
+
+            if (gameState.stats.combosScored.hasOwnProperty(combo)) {
+                gameState.stats.combosScored[combo]++;
+            }
+            
+            const rerollsUsedThisRound = (2 + gameState.enhancements.filter(e => e.effect.type === "reroll_boost").reduce((acc, e) => acc + e.effect.value, 0)) - initialRerolls;
+            checkAchievements({ action: 'score', score: totalScore, combo: combo, rerollsUsedInRound: rerollsUsedThisRound });
+
+
+            const goldenReroll = gameState.enhancements.find(e => e.effect.type === "chance_to_repeat_round");
+            if (goldenReroll) {
+                let totalChance = goldenReroll.effect.chance;
+                const chanceBoosts = gameState.enhancements.filter(e => e.effect.type === "chance_increase");
+                chanceBoosts.forEach(boost => {
+                    totalChance += boost.effect.value;
+                });
+
+                if (Math.random() < totalChance) {
+                    gameState.payoutReady = false;
+                    gameState.hasScoredThisRound = false;
+                    gameState.isFirstRoll = true;
+                    resetRerolls(combo);
+                    gameState.dice.forEach(die => die.locked = false);
+                    updateUI();
+                    saveGameState();
+                    return;
+                }
+            }
+
+            if (!gameState.payoutSuccessful && gameState.round === gameState.maxRounds) {
+                gameState.roundLockedDown = true; 
+                updateUI();
+                saveGameState();
+                if (gameState.chips < gameState.currentCycleGoal) {
+                    showGameOver(gameState.currentCycleGoal);
+                }
+                return; 
+            } 
+            
+            gameState.round++;
+            gameState.payoutReady = false; 
+            gameState.hasScoredThisRound = false; 
+            gameState.freeRerollUsedThisRound = false; 
+            gameState.repeaterTargetIndex = -1; 
+            resetRerolls(combo);
+            gameState.isFirstRoll = true;
+            
+            const currentDiceCount = gameState.dice.length;
+            gameState.dice = Array.from({ length: currentDiceCount }, (_, i) => ({ value: 1, locked: false, index: i }));
+            updateUI(); 
+            saveGameState();
+        }
+
+        function resetRerolls(lastCombo = "") {
+            // Permanent reroll boost from perks like "Hyper Roll"
+            let permanentRerollBoost = gameState.enhancements
+                .filter(e => e.effect.type === "reroll_boost")
+                .reduce((total, e) => total + e.effect.value, 0);
+                
+            let temporaryBonusRerolls = 0;
+            
+            // Bonus from scoring a specific combo in the previous round (e.g., Chain Reaction)
+            const rerollOnComboPerk = gameState.enhancements.find(e => e.effect.type === 'reroll_on_combo');
+            if (rerollOnComboPerk && rerollOnComboPerk.effect.combos.includes(lastCombo)) {
+                 temporaryBonusRerolls += rerollOnComboPerk.effect.value;
+            }
+            
+            // Bonus for being in the first round of a cycle (e.g., Reroll Prep)
+            if (gameState.round === 1) {
+                const firstRoundBoosts = gameState.enhancements
+                    .filter(e => e.effect.type === "temp_reroll_boost")
+                    .reduce((total, e) => total + e.effect.value, 0);
+                temporaryBonusRerolls += firstRoundBoosts;
+            }
+
+            gameState.rerolls = 2 + permanentRerollBoost + temporaryBonusRerolls;
+        }
+        
+        /**
+         * Determines the probability distribution for payout reward tiers based on the current round and cycle.
+         * @param {number} round - The current round (1-5).
+         * @param {number} cycle - The current cycle.
+         * @returns {object} An object with probabilities for each tier, e.g., { t3: 0.15, t2: 0.65, t1: 0.20 }.
+         */
+        function determinePayoutProbabilities(round, cycle) {
+            let probs = { t3: 0, t2: 0, t1: 0 };
+
+            if (round <= 2) { // Rounds 1-2 have a chance for T3
+                if (cycle <= 2) {
+                    probs = { t3: 0.15, t2: 0.65, t1: 0.20 };
+                } else if (cycle <= 4) {
+                    probs = { t3: 0.30, t2: 0.60, t1: 0.10 };
+                } else { // Cycles 5+
+                    probs = { t3: 0.40, t2: 0.55, t1: 0.05 };
+                }
+            } else if (round <= 4) { // Rounds 3-4 have a chance for T2
+                if (cycle <= 2) {
+                    probs = { t3: 0, t2: 0.70, t1: 0.30 };
+                } else if (cycle <= 4) {
+                    probs = { t3: 0, t2: 0.80, t1: 0.20 };
+                } else { // Cycles 5+
+                    probs = { t3: 0, t2: 0.85, t1: 0.15 };
+                }
+            } else { // Round 5 is guaranteed T1
+                probs = { t3: 0, t2: 0, t1: 1.0 };
+            }
+            return probs;
+        }
+
+        /**
+         * Selects a tier randomly based on a given probability distribution.
+         * @param {object} probs - The probability object from determinePayoutProbabilities.
+         * @returns {number} The chosen tier (1, 2, or 3).
+         */
+        function chooseTierFromProbs(probs) {
+            const rand = Math.random();
+            if (rand < probs.t3) {
+                return 3;
+            } else if (rand < probs.t3 + probs.t2) {
+                return 2;
+            } else {
+                return 1;
+            }
+        }
+
+        function handlePayout() {
+            const goal = gameState.currentCycleGoal;
+            const canAfford = gameState.chips >= goal;
+            
+            if (gameState.roundLockedDown && !canAfford) {
+                showGameOver(goal);
+                return;
+            }
+            if (gameState.payoutSuccessful || !canAfford) return;
+            if (!gameState.payoutReady) {
+                gameState.payoutReady = true;
+                updateUI(); 
+                return;
+            }
+
+            gameState.payoutReady = false; 
+            gameState.chips -= goal;
+            gameState.payoutSuccessful = true;
+            
+            showPayoutSuccessModal();
+            updateUI();
+        }
+        
+        function completeCycle(chosenReward, perkToReplaceId = null) {
+            checkAchievements({ action: 'payout', shopPerksBoughtThisCycle: gameState.stats.shopPerksBoughtThisCycle || 0 });
+
+            if (perkToReplaceId !== null) {
+                const index = gameState.enhancements.findIndex(e => e.id === perkToReplaceId);
+                if (index !== -1) {
+                    gameState.enhancements.splice(index, 1);
+                    gameState.payoutSuccessCount[chosenReward.tier]--;
+                }
+            }
+
+            if (chosenReward.tier) {
+                 gameState.payoutSuccessCount[chosenReward.tier]++;
+                 if (chosenReward.effect.type === "extra_die" && gameState.dice.length < 6) {
+                     gameState.dice.push({ value: 1, locked: false, index: gameState.dice.length });
+                 }
+                 gameState.enhancements.push(chosenReward);
+            } else { 
+                if (chosenReward.effect.type === "chips_flat_bonus") {
+                    gameState.chips += chosenReward.effect.value;
+                }
+                const newPerkId = 900 + Math.floor(Math.random() * 100);
+                const perk = { ...chosenReward, id: newPerkId }; 
+                gameState.enhancements.push(perk);
+                if (chosenReward.effect.type === "reroll_boost") resetRerolls();
+            }
+
+            gameState.cycle++;
+            gameState.round = 1;
+            gameState.payoutSuccessful = false;
+            gameState.payoutReady = false; 
+            gameState.hasScoredThisRound = false; 
+            gameState.roundLockedDown = false; 
+            gameState.repeaterTargetIndex = -1; 
+            gameState.isFirstRoll = true;
+            gameState.freeRerollUsedThisRound = false; 
+            
+            // --- NEW: Hybrid Goal Scaling Logic ---
+            if (gameState.cycle <= 9) {
+                // Linear scaling for early game (Cycles 2-9)
+                gameState.currentCycleGoal = 150 + (gameState.cycle - 1) * 250;
+            } else {
+                // Multiplicative scaling for late game (Cycle 10+)
+                let multiplier = 1.3; // Default for cycles 10-14
+                if (gameState.cycle >= 25) { // Added for even later game scaling
+                    multiplier = 1.6;
+                } else if (gameState.cycle >= 20) { // Cycles 20-24
+                    multiplier = 1.5;
+                } else if (gameState.cycle >= 15) { // Cycles 15-19
+                    multiplier = 1.4;
+                }
+                // The new goal is the *previous* goal times the multiplier for the new cycle.
+                // We round to the nearest 5 to keep the goal numbers clean.
+                let newGoal = Math.round(gameState.currentCycleGoal * multiplier / 5) * 5;
+                gameState.currentCycleGoal = newGoal;
+            }
+
+            gameState.stats.shopPerksBoughtThisCycle = 0; // Reset for achievement
+            resetRerolls();
+            
+            checkAchievements();
+
+            const currentDiceCount = gameState.dice.length;
+            gameState.dice = Array.from({ length: currentDiceCount }, (_, i) => ({ value: 1, locked: false, index: i }));
+            generateShop();
+            
+            payoutSuccessModal.classList.add('hidden');
+            replacementModal.classList.add('hidden');
+            gameState.pendingReplacementPerk = null;
+            updateUI();
+            rollBtn.disabled = false;
+            saveGameState();
+        }
+
+        function buyEnhancement(id) {
+            const enhInShop = gameState.currentShop.find(e => e.id === id);
+            if (!enhInShop || enhInShop.purchased) return;
+
+            const discount = getDiscountFactor();
+            const actualCost = Math.round(enhInShop.cost * (1 - discount));
+            
+            if (gameState.chips >= actualCost) {
+                gameState.chips -= actualCost;
+
+                const originalEnh = shopEnhancements.find(e => e.id === id);
+
+                if (originalEnh.effect.type === 'chips_flat_bonus') {
+                    gameState.chips += originalEnh.effect.value;
+                } else {
+                    gameState.enhancements.push({ ...originalEnh });
+                }
+                
+                persistentStats.totalPerksBought++;
+                gameState.stats.shopPerksBoughtThisCycle = (gameState.stats.shopPerksBoughtThisCycle || 0) + 1;
+
+                checkAchievements({ action: 'buy_perk', perk: originalEnh });
+
+                enhInShop.purchased = true;
+                
+                if (originalEnh.effect.type === "reroll_boost") {
+                    resetRerolls();
+                }
+
+                showShopModal(); 
+                saveGameState();
+            }
+        }
+
+        function sellEnhancement(index) {
+            const enh = gameState.enhancements[index];
+            if (!enh) return;
+
+            let refund;
+            if (enh.tier) {
+                refund = 150 * enh.tier; 
+                gameState.payoutSuccessCount[enh.tier]--;
+            } else {
+                const originalShopPerk = shopEnhancements.find(e => e.id === enh.id);
+                refund = originalShopPerk ? Math.floor(originalShopPerk.cost / 2) : 100;
+            }
+            
+            gameState.enhancements.splice(index, 1);
+            gameState.chips += refund;
+
+            checkAchievements({ action: 'sell_perk' });
+            
+            if (enh.effect.type === "reroll_boost") {
+                resetRerolls();
+            }
+
+            showShopModal(); 
+            saveGameState();
+        }
+        
+        function showShopModal() {
+            modalChipsDisplay.textContent = gameState.chips;
+            shopOptionsDiv.innerHTML = '';
+            sellOptionsDiv.innerHTML = '';
+            const discount = getDiscountFactor();
+            let shopRerollCostReduction = gameState.enhancements
+                .filter(e => e.effect.type === 'shop_reroll_cost_reduction')
+                .reduce((acc, e) => acc + e.effect.value, 0);
+            const finalShopRerollCost = Math.max(0, gameState.shopRerollCost - shopRerollCostReduction);
+
+
+            const rerollBtn = document.getElementById('reroll-shop-btn');
+            const canAffordReroll = gameState.chips >= finalShopRerollCost;
+            rerollBtn.textContent = `Reroll (${finalShopRerollCost}C)`;
+            rerollBtn.disabled = !canAffordReroll;
+            rerollBtn.classList.toggle('opacity-50', !canAffordReroll);
+
+            gameState.currentShop.forEach(enh => {
+                const actualCost = Math.round(enh.cost * (1 - discount));
+                const canAfford = gameState.chips >= actualCost;
+                const isPurchasedThisSession = enh.purchased;
+
+                const isAlreadyOwnedAndNotStackable = gameState.enhancements.some(p => p.id === enh.id) && !enh.description.includes("(Stackable)");
+                
+                let isDisabledByConflict = false;
+                if ((enh.id === 38 && gameState.enhancements.some(e => e.id === 7)) || (enh.id === 7 && gameState.enhancements.some(e => e.id === 38))) {
+                    isDisabledByConflict = true;
+                }
+
+                const isUnavailable = isPurchasedThisSession || isAlreadyOwnedAndNotStackable || isDisabledByConflict;
+                
+                let buttonText = 'Purchased';
+                if (!isUnavailable) {
+                    buttonText = `${actualCost} Chips`;
+                } else if (isDisabledByConflict) {
+                    buttonText = 'Conflicting';
+                }
+                else if (!isPurchasedThisSession && isAlreadyOwnedAndNotStackable) {
+                    buttonText = 'Owned';
+                }
+
+                const isDisabled = !canAfford || isUnavailable;
+                
+                const card = document.createElement('div');
+                card.classList.add('p-4', 'rounded-lg', 'card-shop-option', isDisabled ? 'opacity-50' : 'bg-gray-700');
+                if (isDisabled) card.classList.add('disabled');
+                
+                const rarityColor = getRarityColorClass(enh.rarity);
+                card.innerHTML = `
+                    <h3 class="text-xl font-bold ${rarityColor} mb-1">${enh.name}</h3>
+                    <p class="text-sm text-gray-300 mb-3">${formatDescription(enh.description)}</p>
+                    <button id="buy-${enh.id}" class="w-full py-2 rounded-md font-bold transition-colors disabled:opacity-50
+                        ${canAfford && !isUnavailable ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600'}"
+                        ${isDisabled ? 'disabled' : ''}>
+                        ${buttonText}
+                    </button>
+                `;
+                shopOptionsDiv.appendChild(card);
+                
+                if (canAfford && !isUnavailable) {
+                    document.getElementById(`buy-${enh.id}`).addEventListener('click', () => buyEnhancement(enh.id));
+                }
+            });
+            
+            if (gameState.enhancements.length === 0) {
+                 sellOptionsDiv.innerHTML = '<p class="text-center text-gray-500 italic">No perks to sell.</p>';
+            } else {
+                gameState.enhancements.forEach((enh, index) => {
+                    const isPayoutPerk = enh.tier;
+                    const originalShopPerk = shopEnhancements.find(e => e.id === enh.id);
+                    let refund;
+                    const perkColor = enh.tier ? getTierColorClass(enh.tier) : getRarityColorClass(enh.rarity);
+
+                    if (isPayoutPerk) {
+                        refund = 150 * enh.tier; 
+                    } else if (originalShopPerk) {
+                        refund = Math.floor(originalShopPerk.cost / 2);
+                    } else {
+                        refund = 100;
+                    }
+
+                    const card = document.createElement('div');
+                    card.classList.add('p-3', 'rounded-lg', 'bg-gray-700/70', 'flex', 'justify-between', 'items-center', 'w-full');
+                    
+                    card.innerHTML = `
+                        <div class="flex-grow pr-2 min-w-0"> 
+                            <p class="font-bold text-base ${perkColor} leading-tight">${enh.name}</p>
+                            <p class="text-xs text-gray-400 truncate">${formatDescription(enh.description)}</p>
+                        </div>
+                        <button id="sell-${index}" class="py-1 px-3 rounded-md font-bold text-sm bg-red-600 hover:bg-red-700 ml-2 flex-shrink-0"> 
+                            SELL (+${refund}C)
+                        </button>
+                    `;
+                    sellOptionsDiv.appendChild(card);
+                    
+                    document.getElementById(`sell-${index}`).addEventListener('click', () => sellEnhancement(index));
+                });
+            }
+
+            shopModal.classList.remove('hidden');
+        }
+
+        /**
+         * Rerolls the shop's inventory for an increasing cost.
+         */
+        function rerollShop() {
+             let shopRerollCostReduction = gameState.enhancements
+                .filter(e => e.effect.type === 'shop_reroll_cost_reduction')
+                .reduce((acc, e) => acc + e.effect.value, 0);
+            const finalShopRerollCost = Math.max(0, gameState.shopRerollCost - shopRerollCostReduction);
+
+            if (gameState.chips >= finalShopRerollCost) {
+                gameState.chips -= finalShopRerollCost;
+                gameState.shopRerollCost = Math.round(gameState.shopRerollCost * 1.3) + 5;
+                gameState.stats.shopRerollsThisRun = (gameState.stats.shopRerollsThisRun || 0) + 1;
+                checkAchievements({ action: 'reroll_shop' });
+                generateShop();
+                showShopModal(); 
+                saveGameState();
+            }
+        }
+
+        /**
+         * Shows the complete list of all available perks in the game.
+         */
+        function showPerksModal() {
+            const perksListContent = document.getElementById('perks-list-content');
+            perksListContent.innerHTML = ''; // Clear previous content
+
+            const shopPerksTab = document.getElementById('shop-perks-tab');
+            const payoutPerksTab = document.getElementById('payout-perks-tab');
+
+            const shopPerksContainer = document.createElement('div');
+            const payoutPerksContainer = document.createElement('div');
+            payoutPerksContainer.className = 'hidden';
+
+            perksListContent.appendChild(shopPerksContainer);
+            perksListContent.appendChild(payoutPerksContainer);
+
+            // Tab switching logic
+            shopPerksTab.addEventListener('click', () => {
+                shopPerksContainer.classList.remove('hidden');
+                payoutPerksContainer.classList.add('hidden');
+                shopPerksTab.classList.add('border-blue-400', 'text-blue-300');
+                shopPerksTab.classList.remove('border-transparent', 'text-gray-400');
+                payoutPerksTab.classList.add('border-transparent', 'text-gray-400');
+                payoutPerksTab.classList.remove('border-blue-400', 'text-blue-300');
+                perksListContent.scrollTop = 0; // Reset scroll position
+            });
+
+            payoutPerksTab.addEventListener('click', () => {
+                payoutPerksContainer.classList.remove('hidden');
+                shopPerksContainer.classList.add('hidden');
+                payoutPerksTab.classList.add('border-blue-400', 'text-blue-300');
+                payoutPerksTab.classList.remove('border-transparent', 'text-gray-400');
+                shopPerksTab.classList.add('border-transparent', 'text-gray-400');
+                shopPerksTab.classList.remove('border-blue-400', 'text-blue-300');
+                perksListContent.scrollTop = 0; // Reset scroll position
+            });
+            
+            const createPerkCard = (perk) => {
+                const card = document.createElement('div');
+                const colorClass = perk.tier ? getTierColorClass(perk.tier) : getRarityColorClass(perk.rarity);
+                card.className = `p-3 rounded-lg bg-gray-900/50 border border-gray-700`;
+                card.innerHTML = `<p class="font-bold text-lg ${colorClass} mb-1">${perk.name}</p><p class="text-sm text-gray-400">${formatDescription(perk.description)}</p>`;
+                return card;
+            };
+
+            const createAccordionSection = (title, perks, titleColorClass, container) => {
+                const section = document.createElement('div');
+                section.className = 'mb-3';
+
+                const button = document.createElement('button');
+                button.className = `w-full text-left p-3 rounded-lg font-bold text-lg flex justify-between items-center transition-colors ${titleColorClass} bg-gray-700 hover:bg-gray-600`;
+                button.innerHTML = `
+                    <span>${title}</span>
+                    <svg class="w-5 h-5 transition-transform chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                `;
+                
+                const content = document.createElement('div');
+                content.className = 'hidden pt-2 pl-2 border-l-2 border-gray-600 ml-2 flex flex-col gap-2';
+                
+                perks.forEach(perk => content.appendChild(createPerkCard(perk)));
+                
+                button.addEventListener('click', () => {
+                    content.classList.toggle('hidden');
+                    button.querySelector('.chevron').classList.toggle('rotate-180');
+                });
+                
+                section.appendChild(button);
+                section.appendChild(content);
+                container.appendChild(section);
+            };
+
+            // Populate Shop Perks Tab
+            const shopRarities = {
+                'Common': shopEnhancements.filter(p => p.rarity === 'common'),
+                'Uncommon': shopEnhancements.filter(p => p.rarity === 'uncommon'),
+                'Rare': shopEnhancements.filter(p => p.rarity === 'rare'),
+                'Legendary': shopEnhancements.filter(p => p.rarity === 'legendary'),
+            };
+            createAccordionSection('Common Perks', shopRarities.Common, 'text-green-400', shopPerksContainer);
+            createAccordionSection('Uncommon Perks', shopRarities.Uncommon, 'text-blue-400', shopPerksContainer);
+            createAccordionSection('Rare Perks', shopRarities.Rare, 'text-purple-400', shopPerksContainer);
+            createAccordionSection('Legendary Perks', shopRarities.Legendary, 'text-orange-400', shopPerksContainer);
+
+            // Populate Payout Perks Tab
+            createAccordionSection('Tier 1 Perks', payoutEnhancements[1], 'text-yellow-400', payoutPerksContainer);
+            createAccordionSection('Tier 2 Perks', payoutEnhancements[2], 'text-pink-400', payoutPerksContainer);
+            createAccordionSection('Tier 3 Perks', payoutEnhancements[3], 'text-red-400', payoutPerksContainer);
+
+            perksModal.classList.remove('hidden');
+        }
+
+        /**
+         * Shows the statistics modal with current run data.
+         */
+        function showStatsModal() {
+            const statsContent = document.getElementById('stats-list-content');
+            statsContent.innerHTML = '';
+
+            const createStatRow = (label, value) => {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center p-2 bg-gray-900/50 rounded-lg';
+                row.innerHTML = `<span class="text-gray-300">${label}:</span><span class="font-bold text-yellow-300">${value}</span>`;
+                return row;
+            };
+
+            statsContent.appendChild(createStatRow('Total Chips Earned', gameState.stats.totalChipsEarned));
+            statsContent.appendChild(createStatRow('Highest Round Score', gameState.stats.highestRoundScore));
+            statsContent.appendChild(createStatRow('Rerolls Used', gameState.stats.rerollsUsed));
+            statsContent.appendChild(createStatRow('Cycles Completed', gameState.cycle - 1));
+
+            const combosTitle = document.createElement('h3');
+            combosTitle.className = 'text-xl font-bold text-green-400 border-t border-gray-600 pt-3 mt-2';
+            combosTitle.textContent = 'Combos Scored This Run';
+            statsContent.appendChild(combosTitle);
+
+            let scoredCombosCount = 0;
+            for (const [combo, count] of Object.entries(gameState.stats.combosScored)) {
+                if (count > 0) {
+                    statsContent.appendChild(createStatRow(combo, count));
+                    scoredCombosCount++;
+                }
+            }
+            if (scoredCombosCount === 0) {
+                const noCombos = document.createElement('p');
+                noCombos.className = 'text-center text-gray-500 italic';
+                noCombos.textContent = 'No combos scored yet.';
+                statsContent.appendChild(noCombos);
+            }
+
+            const allTimeTitle = document.createElement('h2');
+            allTimeTitle.className = 'text-2xl font-bold text-center mt-6 mb-2 text-yellow-400';
+            allTimeTitle.textContent = 'All-Time Bests';
+            statsContent.appendChild(allTimeTitle);
+
+            statsContent.appendChild(createStatRow('Highest Cycle Reached', persistentStats.highestCycleReached));
+            statsContent.appendChild(createStatRow('Highest Score in One Round', persistentStats.highestScoreInOneRound));
+            statsContent.appendChild(createStatRow('Total Runs Started', persistentStats.totalRunsStarted));
+            statsContent.appendChild(createStatRow('Total Perks Bought', persistentStats.totalPerksBought));
+
+
+            statsModal.classList.remove('hidden');
+        }
+
+        /**
+         * Shows the achievements modal.
+         */
+        function showAchievementsModal(initialTab = 'achievements', initialCategory = 'Cycles') {
+            const achievementsContent = document.getElementById('achievements-list-content');
+            const categoryButtonsContainer = document.getElementById('achievement-category-buttons');
+            const cosmeticsTabContent = document.getElementById('cosmetics-tab-content');
+            const achievementsTabContent = document.getElementById('achievements-tab-content');
+            const tabs = achievementsModal.querySelectorAll('.achievement-tab');
+            
+            achievementsContent.innerHTML = '';
+            categoryButtonsContainer.innerHTML = '';
+
+            const categories = [...new Set(achievements.map(a => a.category))];
+            let selectedCategory = initialCategory;
+
+            const renderAchievements = (category) => {
+                selectedCategory = category;
+                achievementsContent.innerHTML = '';
+
+                Array.from(categoryButtonsContainer.children).forEach(button => {
+                    button.classList.toggle('bg-yellow-600', button.dataset.category === category);
+                    button.classList.toggle('bg-gray-700', button.dataset.category !== category);
+                });
+
+                achievements.filter(ach => ach.category === category).forEach(ach => {
+                    const progress = achievementProgress[ach.id] || { count: 0, unlocked: false };
+                    const isUnlocked = progress.unlocked;
+                    const card = document.createElement('div');
+                    card.className = `p-3 rounded-lg mb-2 border ${isUnlocked ? 'bg-yellow-900/50 border-yellow-700' : 'bg-gray-900/50 border-gray-700'}`;
+                    
+                    let rewardText = '';
+                    if (ach.reward) {
+                        const cosmetic = ach.reward.type === 'dice_skin' ? diceSkins[ach.reward.id] 
+                                   : ach.reward.type === 'roll_btn' ? rollButtonStyles[ach.reward.id]
+                                   : ach.reward.type === 'dice_effect' ? diceEffects[ach.reward.id]
+                                   : backgroundStyles[ach.reward.id];
+                        rewardText = `<span class="text-xs font-bold p-1 rounded ${cosmetic.class || ''} ${cosmetic.name === 'Default' ? 'text-black' : ''}">Unlocks: ${cosmetic.name}</span>`;
+                    }
+
+                    let progressBar = '';
+                    if (ach.type === 'progress' && !isUnlocked) {
+                        const percent = Math.min(100, (progress.count / ach.goal) * 100);
+                        progressBar = `
+                            <div class="mt-2 w-full progress-bar-bg rounded-full h-2.5">
+                                <div class="progress-bar-fill h-2.5 rounded-full" style="width: ${percent}%"></div>
+                            </div>
+                            <p class="text-xs text-right text-gray-400">${progress.count} / ${ach.goal}</p>
+                        `;
+                    }
+
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold ${isUnlocked ? 'text-yellow-400' : 'text-gray-400'}">${ach.name}</h3>
+                            ${isUnlocked ? `<span class="text-green-400 font-bold">✓</span>` : ''}
+                        </div>
+                        <p class="text-sm text-gray-400">${ach.description}</p>
+                        ${progressBar}
+                        ${isUnlocked && rewardText ? `<div class="mt-2">${rewardText}</div>` : ''}
+                    `;
+                    achievementsContent.appendChild(card);
+                });
+            };
+
+            categories.forEach(category => {
+                const button = document.createElement('button');
+                button.textContent = category;
+                button.dataset.category = category;
+                button.className = 'py-1 px-3 rounded-md text-sm font-bold hover:bg-yellow-700 transition-colors';
+                button.addEventListener('click', () => renderAchievements(category));
+                categoryButtonsContainer.appendChild(button);
+            });
+
+            renderAchievements(selectedCategory);
+
+
+            const skinsSelector = document.getElementById('dice-skins-selector');
+            const effectsSelector = document.getElementById('dice-effects-selector');
+            const rollBtnSelector = document.getElementById('roll-button-selector');
+            const backgroundSelector = document.getElementById('background-selector');
+            skinsSelector.innerHTML = '';
+            effectsSelector.innerHTML = '';
+            rollBtnSelector.innerHTML = '';
+            backgroundSelector.innerHTML = '';
+
+            const isRewardUnlocked = (reward) => {
+                if (!reward) return false;
+                const ach = achievements.find(a => a.reward && a.reward.type === reward.type && a.reward.id === reward.id);
+                return ach && achievementProgress[ach.id]?.unlocked;
+            }
+
+            // Dice Skins
+            Object.entries(diceSkins).forEach(([skinId, skin]) => {
+                const unlocked = skinId === 'default' || isRewardUnlocked({ type: 'dice_skin', id: skinId });
+                if (unlocked) {
+                    const card = document.createElement('div');
+                    card.className = `p-2 rounded-lg text-center cursor-pointer border-2 ${selectedDiceSkin === skinId ? 'border-green-400' : 'border-transparent'}`;
+                    card.innerHTML = `<div class="die mx-auto ${skin.class}">⚄</div><p class="text-sm mt-2">${skin.name}</p>`;
+                    card.addEventListener('click', () => {
+                        selectedDiceSkin = skinId;
+                        saveAchievements();
+                        showAchievementsModal('cosmetics', selectedCategory);
+                        updateUI();
+                    });
+                    skinsSelector.appendChild(card);
+                }
+            });
+            
+            // Dice Effects
+            Object.entries(diceEffects).forEach(([effectId, effect]) => {
+                const unlocked = effectId === 'none' || isRewardUnlocked({ type: 'dice_effect', id: effectId });
+                if (unlocked) {
+                    const card = document.createElement('div');
+                    card.className = `p-2 rounded-lg text-center cursor-pointer border-2 ${selectedDiceEffect === effectId ? 'border-green-400' : 'border-transparent'}`;
+                    const previewDie = document.createElement('div');
+                    previewDie.className = `die mx-auto bg-white text-black relative`;
+                    previewDie.innerHTML = `<span class="relative z-10">⚄</span>`;
+                    if (effect.class) {
+                        const sparkleContainer = document.createElement('div');
+                        sparkleContainer.className = 'die-sparkle-container';
+                        previewDie.classList.add(effect.class);
+                        for(let i = 0; i < 3; i++) {
+                            const sparkle = document.createElement('div');
+                            sparkle.className = 'sparkle';
+                            sparkle.style.cssText = `left: ${Math.random()*100}%; top: ${Math.random()*100}%; animation-delay: ${Math.random()*2}s; animation-duration: ${1.5+Math.random()}s;`;
+                            sparkleContainer.appendChild(sparkle);
+                        }
+                        previewDie.appendChild(sparkleContainer);
+                    }
+                    card.appendChild(previewDie);
+                    const nameP = document.createElement('p');
+                    nameP.className = 'text-sm mt-2';
+                    nameP.textContent = effect.name;
+                    card.appendChild(nameP);
+
+                    card.addEventListener('click', () => {
+                        selectedDiceEffect = effectId;
+                        saveAchievements();
+                        showAchievementsModal('cosmetics', selectedCategory);
+                        updateUI();
+                    });
+                    effectsSelector.appendChild(card);
+                }
+            });
+
+
+            // Roll Button Styles
+            Object.entries(rollButtonStyles).forEach(([styleId, style]) => {
+                const unlocked = styleId === 'default' || isRewardUnlocked({ type: 'roll_btn', id: styleId });
+                 if (unlocked) {
+                    const card = document.createElement('div');
+                    card.className = `p-2 rounded-lg text-center cursor-pointer border-2 ${selectedRollBtnStyle === styleId ? 'border-green-400' : 'border-transparent'}`;
+                    card.innerHTML = `<div class="w-full py-2 rounded-md font-bold text-sm ${style.class}">ROLL</div><p class="text-sm mt-2">${style.name}</p>`;
+                    card.addEventListener('click', () => {
+                        selectedRollBtnStyle = styleId;
+                        saveAchievements();
+                        showAchievementsModal('cosmetics', selectedCategory);
+                        updateUI();
+                    });
+                    rollBtnSelector.appendChild(card);
+                 }
+            });
+
+            // Background Styles
+            Object.entries(backgroundStyles).forEach(([styleId, style]) => {
+                const unlocked = styleId === 'default' || isRewardUnlocked({ type: 'background', id: styleId });
+                if (unlocked) {
+                    const card = document.createElement('div');
+                    card.className = `p-2 rounded-lg text-center cursor-pointer border-2 h-24 flex flex-col justify-between ${selectedBackgroundStyle === styleId ? 'border-green-400' : 'border-transparent'}`;
+                    card.innerHTML = `<div class="w-full h-16 rounded-md ${style.class} ${style.sparkles ? 'overflow-hidden relative' : ''}">${style.sparkles ? '<div class="absolute top-1/4 left-1/4 w-1 h-1 bg-white rounded-full shadow-[5px_10px_0_0_white,-5px_15px_0_0_#fff5] "></div>' : ''}</div><p class="text-sm mt-1">${style.name}</p>`;
+                    card.addEventListener('click', () => {
+                        selectedBackgroundStyle = styleId;
+                        saveAchievements();
+                        applyBackgroundCosmetics();
+                        showAchievementsModal('cosmetics', selectedCategory);
+                    });
+                    backgroundSelector.appendChild(card);
+                }
+            });
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    tabs.forEach(t => {
+                        t.classList.remove('border-yellow-400', 'text-yellow-300');
+                        t.classList.add('border-transparent', 'text-gray-400');
+                    });
+                    tab.classList.add('border-yellow-400', 'text-yellow-300');
+                    
+                    if(tabName === 'achievements') {
+                        achievementsTabContent.classList.remove('hidden');
+                        cosmeticsTabContent.classList.add('hidden');
+                    } else {
+                        cosmeticsTabContent.classList.remove('hidden');
+                        achievementsTabContent.classList.add('hidden');
+                    }
+                });
+            });
+            
+            document.querySelector(`.achievement-tab[data-tab="${initialTab}"]`).click();
+
+            achievementsModal.classList.remove('hidden');
+        }
+
+
+        /**
+         * Shows the scoring hands modal with their base values.
+         */
+        function showHandsModal() {
+            const handsContent = document.getElementById('hands-list-content');
+            handsContent.innerHTML = '';
+
+            const createHandRow = (label, value) => {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center p-2 bg-gray-900/50 rounded-lg';
+                row.innerHTML = `<span class="text-gray-300">${label}:</span><span class="font-bold text-yellow-300">${value} Chips</span>`;
+                return row;
+            };
+
+            const sortedCombos = Object.entries(gameState.baseScores).sort(([, scoreA], [, scoreB]) => scoreA - scoreB);
+
+            for (const [combo, score] of sortedCombos) {
+                handsContent.appendChild(createHandRow(combo, getBaseScore(combo)));
+            }
+
+            handsModal.classList.remove('hidden');
+        }
+
+        /**
+         * Shows the Payout Success modal with reward options.
+         */
+        function showPayoutSuccessModal() {
+            paidGoalSpan.textContent = gameState.currentCycleGoal;
+            payoutCycleDisplay.textContent = gameState.cycle;
+            rewardOptionsDiv.innerHTML = '';
+            
+            const probabilities = determinePayoutProbabilities(gameState.round, gameState.cycle);
+            payoutBonusNote.textContent = `Payout in Round ${gameState.round}. Reward chances: T3(${Math.round(probabilities.t3*100)}%), T2(${Math.round(probabilities.t2*100)}%), T1(${Math.round(probabilities.t1*100)}%).`;
+
+            let eligibleRewards = [];
+            const offeredPerkIds = new Set(); // To avoid offering the same perk twice
+
+            while (eligibleRewards.length < 3) {
+                let chosenTier = chooseTierFromProbs(probabilities);
+                let perkToOffer = null;
+
+                // Check if a slot is available for the chosen tier, cascading down if not.
+                let tierToTry = chosenTier;
+                let slotFound = false;
+                while (tierToTry > 0) {
+                    if (gameState.payoutSuccessCount[tierToTry] < gameState.maxPerks[tierToTry]) {
+                        slotFound = true;
+                        break;
+                    }
+                    tierToTry--;
+                }
+
+                if (slotFound) {
+                    // We found an open slot, try to find a perk for it.
+                    const availablePerks = payoutEnhancements[tierToTry].filter(reward => 
+                        !gameState.enhancements.some(e => e.id === reward.id) &&
+                        !offeredPerkIds.has(reward.id) &&
+                        !(reward.effect.type === "extra_die" && gameState.dice.length >= 6)
+                    );
+
+                    if (availablePerks.length > 0) {
+                        perkToOffer = availablePerks[Math.floor(Math.random() * availablePerks.length)];
+                        perkToOffer.actionType = 'ACQUIRE';
+                    }
+                } else {
+                    // No slots available at all, must offer a REPLACEMENT.
+                    // Prioritize replacing a perk of the originally chosen tier.
+                    let replaceTier = chosenTier;
+                    while (replaceTier > 0 && gameState.payoutSuccessCount[replaceTier] === 0) {
+                        replaceTier--; // Find a tier where the player actually has perks to replace.
+                    }
+
+                    if (replaceTier > 0) {
+                         const availableReplacePerks = payoutEnhancements[replaceTier].filter(reward => 
+                            !gameState.enhancements.some(e => e.id === reward.id) && 
+                            !offeredPerkIds.has(reward.id)
+                        );
+                        if (availableReplacePerks.length > 0) {
+                            perkToOffer = availableReplacePerks[Math.floor(Math.random() * availableReplacePerks.length)];
+                            perkToOffer.actionType = 'REPLACE';
+                        }
+                    }
+                }
+
+                // If after all that we still don't have a perk, grab a generic one.
+                if (!perkToOffer) {
+                    perkToOffer = getGenericReward([...offeredPerkIds]);
+                }
+                
+                eligibleRewards.push(perkToOffer);
+                if (perkToOffer && perkToOffer.id) offeredPerkIds.add(perkToOffer.id);
+            }
+            
+            // Render the chosen rewards
+            rewardOptionsDiv.innerHTML = '';
+            eligibleRewards.forEach(reward => {
+                const bgColor = reward.actionType === 'REPLACE' ? 'bg-red-700/50' : 'bg-indigo-700/50';
+                const card = createRewardCard(reward, bgColor);
+                rewardOptionsDiv.appendChild(card);
+            });
+            payoutSuccessModal.classList.remove('hidden');
+        }
+
+        function getGenericReward(excludeIds = []) {
+            const genericRewards = [
+                { id: 901, name: "Free Chips", description: "Gain **chips:+150 Chips** immediately.", rarity: "uncommon", effect: { type: "chips_flat_bonus", value: 150 } },
+                { id: 902, name: "Small Discount", description: "Shop prices are permanently **shop:10% cheaper**.", rarity: "uncommon", effect: { type: "shop_discount_flat", value: 0.1 } },
+                { id: 903, name: "Reroll Boost", description: "Start the next cycle with **reroll:+3 Rerolls**.", rarity: "uncommon", effect: { type: "reroll_boost", value: 3 } }
+            ];
+            let available = genericRewards.filter(r => !excludeIds.includes(r.id));
+            if (available.length === 0) {
+                 available = genericRewards; // Fallback if all are excluded
+            }
+            const reward = available[Math.floor(Math.random() * available.length)];
+            const rewardCopy = {...reward}; // Create a copy
+            rewardCopy.actionType = 'ACQUIRE';
+            return rewardCopy;
+        }
+
+        function createRewardCard(reward, bgColor) {
+             const card = document.createElement('div');
+             card.classList.add('p-4', 'rounded-xl', 'card-reward', bgColor);
+             const rarityColor = reward.tier ? getTierColorClass(reward.tier) : getRarityColorClass(reward.rarity);
+             let tierLabel = reward.tier ? `<span class="text-sm font-bold ml-2">T${reward.tier}</span>` : '';
+             let actionText = 'ACQUIRE (FREE)';
+             if (reward.actionType === 'REPLACE') actionText = `<span class="text-red-300">REPLACE T${reward.tier} SLOT</span>`;
+             else if (reward.actionType === 'ACQUIRE' && reward.tier) actionText = `ACQUIRE T${reward.tier} SLOT`;
+             else if (reward.actionType === 'ACQUIRE' && !reward.tier) actionText = `BONUS ACQUISITION`;
+             card.innerHTML = `<h3 class="text-xl font-bold ${rarityColor} mb-1 flex items-center">${reward.name} ${tierLabel}</h3><p class="text-sm text-gray-400">${formatDescription(reward.description)}</p><p class="text-xs mt-2 text-green-300">${actionText}</p>`;
+             card.addEventListener('click', () => handleRewardSelection(reward));
+             return card;
+        }
+
+        function handleRewardSelection(chosenReward) {
+            if (chosenReward.actionType === 'ACQUIRE') {
+                completeCycle(chosenReward, null);
+                return;
+            }
+            if (chosenReward.actionType === 'REPLACE') {
+                const targetTier = chosenReward.tier;
+                if (targetTier === 3) {
+                    const existingPerk = gameState.enhancements.find(e => e.tier === 3);
+                    if (existingPerk) completeCycle(chosenReward, existingPerk.id);
+                    else completeCycle(chosenReward, null); // Fallback
+                    return;
+                }
+                payoutSuccessModal.classList.add('hidden');
+                gameState.pendingReplacementPerk = chosenReward;
+                showReplacementModal(targetTier, chosenReward);
+            }
+        }
+
+        function showReplacementModal(tier, newPerk) {
+            newPerkNameSpan.textContent = newPerk.name;
+            newPerkTierSpan.textContent = tier;
+            existingPerkTierSpan.textContent = tier;
+            perksToReplaceListDiv.innerHTML = '';
+            
+            const existingPerksInTier = gameState.enhancements.filter(e => e.tier === tier);
+            existingPerksInTier.forEach(existingPerk => {
+                const card = document.createElement('div');
+                const rarityColor = existingPerk.tier ? getTierColorClass(existingPerk.tier) : getRarityColorClass(existingPerk.rarity);
+                card.classList.add('p-3', 'rounded-xl', 'bg-gray-800', 'hover:bg-red-800', 'cursor-pointer', 'transition-colors');
+                card.innerHTML = `<p class="font-bold text-lg ${rarityColor} mb-1">${existingPerk.name}</p><p class="text-sm text-gray-400">${formatDescription(existingPerk.description)}</p><p class="text-xs mt-2 text-red-300">CLICK TO DISCARD THIS T${tier} PERK</p>`;
+                card.addEventListener('click', () => {
+                    completeCycle(newPerk, existingPerk.id); 
+                });
+                perksToReplaceListDiv.appendChild(card);
+            });
+            replacementModal.classList.remove('hidden');
+        }
+
+        function resetGame() {
+            persistentStats.totalRunsStarted++;
+            checkAchievements({action: 'start_run'});
+            savePersistentStats();
+            
+            gameState = getInitialState();
+            generateShop();
+            saveGameState();
+            gameOverModal.classList.add('hidden');
+            restartConfirmModal.classList.add('hidden');
+            updateUI();
+            rollBtn.disabled = false;
+        }
+
+        function showGameOver(requiredGoal) {
+            const modalDiv = gameOverModal.querySelector('div');
+            const titleEl = modalDiv.querySelector('#fail-title');
+            
+            titleEl.textContent = "RUN ENDED";
+            titleEl.classList.remove('text-yellow-300');
+            titleEl.classList.add('text-red-500');
+            modalDiv.classList.remove('bg-gray-800', 'border-yellow-700');
+            modalDiv.classList.add('bg-red-900', 'border-red-700');
+
+            modalDiv.querySelector('.text-xl').innerHTML = `You were short by: <span id="chips-short" class="font-bold text-red-100"></span> Chips.`;
+            modalDiv.querySelector('.text-2xl').classList.remove('hidden');
+
+            const chipsNeeded = requiredGoal - gameState.chips;
+            document.getElementById('chips-short').textContent = chipsNeeded; 
+            finalCycleSpan.textContent = gameState.cycle;
+
+            if (gameState.cycle > persistentStats.highestCycleReached) {
+                persistentStats.highestCycleReached = gameState.cycle;
+                savePersistentStats();
+            }
+
+            checkAchievements();
+            
+            const modalButton = gameOverModal.querySelector('button');
+            modalButton.textContent = "Start New Run";
+            modalButton.classList.remove('btn-payout', 'bg-gray-600', 'hover:bg-gray-700');
+            modalButton.classList.add('bg-red-600', 'hover:bg-red-700');
+            modalButton.onclick = resetGame;
+
+            gameOverModal.classList.remove('hidden');
+        }
+
+        // --- Achievement Logic ---
+        function checkAchievements(context = {}) {
+            achievements.forEach(ach => {
+                const progress = achievementProgress[ach.id] || { count: 0, unlocked: false };
+                if (progress.unlocked) return;
+
+                let conditionMet = false;
+                if (ach.type === 'progress') {
+                    const increment = ach.check({ ...gameState, ...persistentStats }, context);
+                    if (increment > 0) {
+                        progress.count += increment;
+                        if (progress.count >= ach.goal) {
+                            progress.count = ach.goal;
+                            conditionMet = true;
+                        }
+                        achievementProgress[ach.id] = progress;
+                    }
+                } else {
+                    conditionMet = ach.condition({ ...gameState, ...persistentStats }, context);
+                }
+
+                if (conditionMet) {
+                    progress.unlocked = true;
+                    achievementProgress[ach.id] = progress;
+                    showAchievementNotification(ach);
+                    saveAchievements();
+                }
+            });
+        }
+
+        function showAchievementNotification(achievement) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-5 left-1/2 -translate-x-1/2 bg-yellow-600 text-white p-3 rounded-xl shadow-lg z-50 animate-pulse';
+            notification.innerHTML = `<span class="font-bold">🏆 Achievement Unlocked!</span><p>${achievement.name}</p>`;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function applyBackgroundCosmetics() {
+            const body = document.body;
+            const effectsContainer = document.getElementById('background-effects-container');
+            
+            // Remove all possible background classes
+            Object.values(backgroundStyles).forEach(style => {
+                if (style.class) body.classList.remove(style.class);
+            });
+
+            effectsContainer.innerHTML = '';
+            effectsContainer.className = '';
+
+            const style = backgroundStyles[selectedBackgroundStyle] || backgroundStyles['default'];
+            
+            if(style.class) {
+                body.classList.add(style.class);
+            }
+
+            if (style.sparkles) {
+                effectsContainer.classList.add('sparkle-effect');
+                for (let i = 0; i < 50; i++) {
+                    const star = document.createElement('div');
+                    star.className = 'star';
+                    star.style.left = `${Math.random() * 100}vw`;
+                    star.style.top = `${Math.random() * 1000}px`;
+                    star.style.animationDelay = `${Math.random() * 5}s`;
+                    star.style.animationDuration = `${5 + Math.random() * 5}s`;
+                    star.style.opacity = `${0.5 + Math.random() * 0.5}`;
+                    effectsContainer.appendChild(star);
+                }
+            }
+        }
+
+
+        // --- Event Listeners and Initialization ---
+        rollBtn.addEventListener('click', handleRoll);
+        shopBtn.addEventListener('click', showShopModal); 
+        scoreBtn.addEventListener('click', scoreRound);
+        payoutBtn.addEventListener('click', handlePayout);
+        document.getElementById('reroll-shop-btn').addEventListener('click', rerollShop);
+        closeShopModalBtn.addEventListener('click', () => {
+             shopModal.classList.add('hidden');
+             updateUI(); 
+        });
+        perksListBtn.addEventListener('click', showPerksModal);
+        closePerksModalBtn.addEventListener('click', () => {
+            perksModal.classList.add('hidden');
+        });
+        statsBtn.addEventListener('click', showStatsModal);
+        closeStatsModalBtn.addEventListener('click', () => {
+            statsModal.classList.add('hidden');
+        });
+        handsListBtn.addEventListener('click', showHandsModal);
+        closeHandsModalBtn.addEventListener('click', () => {
+            handsModal.classList.add('hidden');
+        });
+        achievementsBtn.addEventListener('click', () => showAchievementsModal());
+        closeAchievementsModalBtn.addEventListener('click', () => {
+            achievementsModal.classList.add('hidden');
+        });
+        restartBtn.addEventListener('click', () => {
+            restartConfirmModal.classList.remove('hidden');
+        });
+        cancelRestartBtn.addEventListener('click', () => {
+            restartConfirmModal.classList.add('hidden');
+        });
+        confirmRestartBtn.addEventListener('click', resetGame);
+
+        // A single global click listener to handle closing tooltips and modals when clicking away.
+        document.addEventListener('click', (event) => {
+            // --- Tooltip Closing Logic ---
+            const isClickOnIcon = event.target.closest('.enhancement-icon');
+            if (!isClickOnIcon) {
+                tooltip.classList.remove('persistent');
+                tooltip.classList.add('hidden');
+            }
+
+            // --- Modal Closing Logic (clicking the backdrop) ---
+            const openModal = document.querySelector('.fixed.inset-0.z-50:not(.hidden)');
+            if (openModal && event.target === openModal) {
+                // BUG FIX: Prevent closing the crucial payout/replacement modals via backdrop click
+                if (openModal === payoutSuccessModal || openModal === replacementModal) {
+                    return; // Do nothing, forcing the player to make a choice.
+                }
+
+                openModal.classList.add('hidden');
+                if (openModal === shopModal) {
+                    updateUI(); // Refresh the main UI if the shop was closed.
+                }
+            }
+        });
+
+        // Initialize the game
+        window.onload = () => {
+             loadPersistentStats();
+             loadAchievements();
+             loadGameState();
+             if (gameState.cycle === 1 && gameState.round === 1 && gameState.chips === 0) {
+                generateShop();
+                if(persistentStats.totalRunsStarted === 0) {
+                     persistentStats.totalRunsStarted = 1;
+                     checkAchievements({action: 'start_run'});
+                     savePersistentStats();
+                }
+             }
+             applyBackgroundCosmetics();
+             updateUI();
+             rollBtn.disabled = false;
+        };
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
