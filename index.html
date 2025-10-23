@@ -478,7 +478,9 @@
 
     <!-- Footer -->
     <footer class="text-center mt-8 mb-4 text-sm text-gray-500">
-        <p>Created by <span class="font-bold text-gray-400">[Benjamin & Louis]</span></p>
+        <p>Created by <span class="font-bold text-gray-400">Benjamin & Louis</span></p>
+        <!-- Added Build Number -->
+        <p id="build-number">Build 0.1.5</p>
     </footer>
 
     <script>
@@ -513,7 +515,7 @@
                 payoutSuccessful: false, 
                 payoutReady: false, 
                 repeaterTargetIndex: -1, 
-                payoutSuccessCount: { 1: 0, 2: 0, 3: 0 },
+                payoutSuccessCount: { 1: 0, 2: 0, 3: 0 }, // Current count of perks for each tier
                 maxPerks: { 1: 5, 2: 3, 3: 1 },
                 baseScores: {
                     "Pair": 10, "Two Pair": 30, "Three of a Kind": 60, "Straight": 120, "Full House": 200, 
@@ -654,21 +656,21 @@
             { id: 12, name: "Chip Stealer", description: "Gain **chips:+1 Chip** for every **score:'1' die locked** when scoring. (Stackable)", cost: 110, rarity: "common", effect: { type: "value_count_bonus", value: 1, check: 1 }, icon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="12" cy="12" r="2"></circle></svg>` },
             { id: 20, name: "Straight Bonus", description: "**chips:+15 Chips** for every **score:Straight** score. (Stackable)", cost: 110, rarity: "common", effect: { type: "flat_bonus", combo: "Straight", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16m-12-4h8m-4 8h4"></path></svg>` },
             { id: 15, name: "Two Pair Special", description: "**chips:+15 Chips** for every **score:Two Pair** score. (Stackable)", cost: 120, rarity: "common", effect: { type: "flat_bonus", combo: "Two Pair", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg>` },
-            { id: 21, name: "Scrap Collector", description: "Gain **chips:+1 Chip** for every reroll used this round. (Stackable)", cost: 120, rarity: "common", effect: { type: "reroll_usage_bonus", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"></path><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"></path><path d="m14 12-4 4-4-4"></path></svg>` },
+            { id: 21, name: "Scrap Collector", description: "Gain **chips:+10 Chips** for every reroll used this round. (Stackable)", cost: 120, rarity: "common", effect: { type: "reroll_usage_bonus", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4"></path><path d="M4 12V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4"></path><path d="m14 12-4 4-4-4"></path></svg>` },
             { id: 22, name: "Micro-Interest", description: "**chips:+1 Chip** for every **chips:200 Chips** you possess when scoring. (Stackable)", cost: 120, rarity: "common", effect: { type: "chips_scaling_bonus", value: 1, scale: 200 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>` },
-            { id: 23, name: "Pocket Change", description: "Adds **chips:+1 Chip** to the final score every round. (Stackable)", cost: 130, rarity: "common", effect: { type: "flat_round_bonus", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>` },
-            { id: 24, name: "Locksmith's Apprentice", description: "**chips:+1 Chip** for **special:each die locked** when scoring. (Stackable)", cost: 130, rarity: "common", effect: { type: "locked_die_bonus", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` },
-            { id: 25, name: "Base Pair Boost", description: "Increases the base score of **score:Pair** by **score:+10**. (Stackable)", cost: 130, rarity: "common", effect: { type: "base_score_increase", combo: "Pair", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 14h7v7h-7z"></path></svg>` },
+            { id: 23, name: "Pocket Change", description: "Adds **chips:+10 Chips** to the final score every round. (Stackable)", cost: 130, rarity: "common", effect: { type: "flat_round_bonus", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>` },
+            { id: 24, name: "Locksmith's Apprentice", description: "**mult:x0.1 multiplier** for **special:each die locked** when scoring. (Stackable)", cost: 130, rarity: "common", effect: { type: "locked_die_mult", value: 0.1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` },
+            { id: 25, name: "Base Pair Boost", description: "Increases the base score of **score:Pair** by **score:+40**. (Stackable)", cost: 130, rarity: "common", effect: { type: "base_score_increase", combo: "Pair", value: 40 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 14h7v7h-7z"></path></svg>` },
             { id: 26, name: "Early Bird", description: "Adds **chips:+15 Chips** to your score if you score in **special:Round 1**. (Stackable)", cost: 130, rarity: "common", effect: { type: "round_specific_bonus", round: 1, value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 21h10m-5-4v4M12 3a9 9 0 0 1 9 9h-3a6 6 0 0 0-6-6V3z"></path></svg>` },
             { id: 66, name: "Chain Reaction", description: "Scoring a **score:Pair** or **score:Two Pair** grants **reroll:+1 Reroll** for the next round. (Non-Stackable)", cost: 140, rarity: "common", effect: { type: "reroll_on_combo", combos: ["Pair", "Two Pair"], value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg>` },
             { id: 28, name: "Shiny Dice", description: "Adds **chips:+2 Chips** to the final score every round. (Stackable)", cost: 140, rarity: "common", effect: { type: "flat_round_bonus", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2z"></path></svg>` },
-            { id: 29, name: "Reroll Refund", description: "Gain **chips:+10 Chips** if you score with **reroll:max rerolls** remaining. (Stackable)", cost: 140, rarity: "common", effect: { type: "max_reroll_bonus", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M1 20v-6a8 8 0 0 1 8-8h11"></path><polyline points="1 14 1 20 7 20"></polyline><path d="M23 4v6a8 8 0 0 1-8 8H4"></path></svg>` },
+            { id: 29, name: "Reroll Refund", description: "Gain **chips:+50 Chips** if you score with **reroll:max rerolls** remaining. (Stackable)", cost: 140, rarity: "common", effect: { type: "max_reroll_bonus", value: 50 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M1 20v-6a8 8 0 0 1 8-8h11"></path><polyline points="1 14 1 20 7 20"></polyline><path d="M23 4v6a8 8 0 0 1-8 8H4"></path></svg>` },
             { id: 30, name: "Greed is Good", description: "**chips:+1 Chip** for every **score:20 score points** from a combo. (Stackable)", cost: 140, rarity: "common", effect: { type: "score_scaling_bonus", value: 1, scale: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>` },
             { id: 31, name: "Threes a Crowd", description: "**chips:+10 Chips** for every **score:Three of a Kind** score. (Stackable)", cost: 140, rarity: "common", effect: { type: "flat_bonus", combo: "Three of a Kind", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5v-2a4 4 0 0 1 4-4h2"></path><path d="M11 7.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"></path><path d="M22 11h-2a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h2v-1.5a1.5 1.5 0 0 0-1.5-1.5 1.5 1.5 0 0 0 1.5-1.5V11z"></path></svg>` },
 
             // --- UNCOMMON PERKS ---
             { id: 3, name: "High Roller", description: "Adds **chips:+5 Chips** to the final score every round. (Stackable)", cost: 150, rarity: "uncommon", effect: { type: "flat_round_bonus", value: 5 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>` },
-            { id: 32, name: "Investor", description: "Gain **chips:+50 Chips** immediately. (One-time purchase)", cost: 150, rarity: "uncommon", effect: { type: "chips_flat_bonus", value: 50 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>` },
+            { id: 32, name: "Investor", description: "Gain **chips:+200 Chips** immediately. (One-time purchase)", cost: 150, rarity: "uncommon", effect: { type: "chips_flat_bonus", value: 200 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>` },
             { id: 33, name: "Even Steven", description: "**chips:+15 Chips** if all locked dice are **special:even**. (Stackable)", cost: 160, rarity: "uncommon", effect: { type: "even_locked_bonus", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>` },
             { id: 34, name: "Odd Job", description: "**chips:+15 Chips** if all locked dice are **special:odd**. (Stackable)", cost: 160, rarity: "uncommon", effect: { type: "odd_locked_bonus", value: 15 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 9l-6 6 6 6"></path><path d="M20 9l-6 6 6 6"></path></svg>` },
             { id: 35, name: "Minimalist", description: "**chips:+20 Chips** if you score with only **special:one die locked**. (Stackable)", cost: 160, rarity: "uncommon", effect: { type: "locked_count_bonus", count: 1, value: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>` },
@@ -682,7 +684,7 @@
             { id: 42, name: "Finisher", description: "Adds **chips:+25 Chips** to your score if you score in **special:Round 5**. (Stackable)", cost: 200, rarity: "uncommon", effect: { type: "round_specific_bonus", round: 5, value: 25 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>` },
             { id: 43, name: "Thrifty", description: "Shop rerolls cost **shop:10 Chips less**. (Stackable)", cost: 200, rarity: "uncommon", effect: { type: "shop_reroll_cost_reduction", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>` },
             { id: 67, name: "Perfect Balance", description: "Gain **chips:+30 Chips** if you score **score:Two Pair** and the sum of the pairs is 7 (e.g., 1&6, 2&5, 3&4). (Stackable)", cost: 210, rarity: "uncommon", effect: { type: "two_pair_sum_bonus", sum: 7, value: 30 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"></path></svg>` },
-            { id: 45, name: "Straight Shooter", description: "**mult:x1.2** score multiplier for **score:Straight**. (Non-Stackable)", cost: 220, rarity: "uncommon", effect: { type: "mult_bonus", combo: "Straight", value: 1.2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>` },
+            { id: 45, name: "Straight Shooter", description: "**mult:x1** score multiplier for **score:Straight**. (Non-Stackable)", cost: 220, rarity: "uncommon", effect: { type: "mult_bonus", combo: "Straight", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>` },
             { id: 49, name: "Dice Insurance", description: "If you score 'No Combo', gain **chips:10 Chips**. (Stackable)", cost: 240, rarity: "uncommon", effect: { type: "flat_bonus", combo: "No Combo", value: 10 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="m9 12 2 2 4-4"></path></svg>` },
             { id: 2, name: "Multiplier Die", description: "**mult:x1.5** score multiplier for **score:Three of a Kind**. (Non-Stackable)", cost: 250, rarity: "uncommon", effect: { type: "mult_bonus", combo: "Three of a Kind", value: 1.5 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>` },
             { id: 51, name: "Four Leaf Clover", description: "Adds **chips:+40 Chips** for every **score:Four of a Kind** score. (Stackable)", cost: 260, rarity: "uncommon", effect: { type: "flat_bonus", combo: "Four of a Kind", value: 40 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l-3.5 3.5a6 6 0 0 0-8.5 8.5L2 12l3.5 3.5a6 6 0 0 0 8.5 8.5L12 22l3.5-3.5a6 6 0 0 0 8.5-8.5L22 12l-3.5-3.5a6 6 0 0 0-8.5-8.5z"></path></svg>` },
@@ -692,8 +694,8 @@
 
             // --- RARE PERKS ---
             { id: 9, name: "High Fives", description: "**chips:+10 Chips** for every **score:'5' die locked** when scoring. (Stackable)", cost: 300, rarity: "rare", effect: { type: "value_count_bonus", value: 10, check: 5 }, icon: `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="9" cy="9" r="2"></circle><circle cx="15" cy="9" r="2"></circle><circle cx="12" cy="15" r="2"></circle><circle cx="9" cy="21" r="2"></circle><circle cx="15" cy="21" r="2"></circle></svg>` },
-            { id: 57, name: "Big Investor", description: "Gain **chips:+100 Chips** immediately. (One-time purchase)", cost: 300, rarity: "rare", effect: { type: "chips_flat_bonus", value: 100 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path><path d="M20 12c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8zm-2 0c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6 6 2.69 6 6z"></path></svg>` },
-            { id: 58, name: "All In", description: "**mult:x2** score multiplier if you score with **reroll:0 rerolls left**. (Non-Stackable)", cost: 320, rarity: "rare", effect: { type: "zero_reroll_mult", value: 2 }, minCycle: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>` },
+            { id: 57, name: "Big Investor", description: "Gain **chips:+500 Chips** immediately. (One-time purchase)", cost: 300, rarity: "rare", effect: { type: "chips_flat_bonus", value: 500 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"></path><path d="M20 12c0-4.42-3.58-8-8-8s-8 3.58-8 8 3.58 8 8 8 8-3.58 8-8zm-2 0c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6 6 2.69 6 6z"></path></svg>` },
+            { id: 58, name: "All In", description: "**mult:x2** score multiplier if you score with **reroll:all rerolls left**. (Non-Stackable)", cost: 320, rarity: "rare", effect: { type: "max_reroll_mult", value: 2 }, minCycle: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>` },
             { id: 59, name: "The Collector", description: "Adds **chips:+20 Chips** to the final score for every die locked when scoring. (Stackable)", cost: 340, rarity: "rare", effect: { type: "locked_die_bonus", value: 20 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path><path d="M12 22v-6.5"></path></svg>` },
             { id: 60, name: "Pair Parity", description: "**score:Pair** combos score as if they were **score:Three of a Kind**. (Base score only). (Non-Stackable)", cost: 350, rarity: "rare", effect: { type: "combo_transformation", from: "Pair", to: "Three of a Kind" }, minCycle: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m15-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"></path><path d="M12 8v8"></path><path d="M10 10h4"></path></svg>` },
             { id: 61, name: "Bank Loan", description: "All `chips_scaling_bonus` perks are **special:twice** as effective. (Non-Stackable)", cost: 360, rarity: "rare", effect: { type: "scaling_bonus_mult", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M18 6l-6 6-6-6"></path></svg>` },
@@ -713,7 +715,7 @@
             3: [
                 { id: 301, name: "Full Lock Bonus", description: "Gain **chips:+250 Chips** if all dice are locked when scoring. (Stackable)", tier: 3, effect: { type: "locked_all_bonus", value: 250 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 7h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h3"></path><path d="M12 12L9 9m6 0l-3 3"></path><path d="M9 15l3 3 3-3"></path></svg>` },
                 { id: 302, name: "The Absolute Die", description: "One random die is always treated as a **score:6** for combo scoring. (Non-Stackable)", tier: 3, effect: { type: "set_value_combo", value: 6 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8z"></path><path d="M12 6v6l4 2"></path></svg>` },
-                { id: 65, name: "Joker's Wild", description: "All dice with a value of **1** are considered **special:wild cards** for combo calculation. (Non-Stackable)", tier: 3, effect: { type: "wild_card", value: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l-3.5 3.5a6 6 0 0 0-8.5 8.5L2 12l3.5 3.5a6 6 0 0 0 8.5 8.5L12 22l3.5-3.5a6 6 0 0 0 8.5-8.5L22 12l-3.5-3.5a6 6 0 0 0-8.5-8.5z"></path><path d="M12 8v8"></path></svg>` },
+                { id: 65, name: "Joker's Wild", description: "**One** die with a value of **1** is considered a **special:wild card** (W) for combo calculation. (Non-Stackable)", tier: 3, effect: { type: "wild_card", value: 1, count: 1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l-3.5 3.5a6 6 0 0 0-8.5 8.5L2 12l3.5 3.5a6 6 0 0 0 8.5 8.5L12 22l3.5-3.5a6 6 0 0 0 8.5-8.5L22 12l-3.5-3.5a6 6 0 0 0-8.5-8.5z"></path><path d="M12 8v8"></path></svg>` },
                 { id: 304, name: "Mega Quad", description: "If you score a **score:Four of a Kind**, your base score is set to **score:2000 chips**. (Non-Stackable)", tier: 3, effect: { type: "set_base_score", combo: "Four of a Kind", value: 2000 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path><path d="M12 17.77V22"></path></svg>` },
                 { id: 305, name: "Final Frontier", description: "Gain **chips:+50 Chips** for every die that has the value **6**. (Stackable)", tier: 3, effect: { type: "value_count_bonus", value: 50, check: 6 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><circle cx="12" cy="12" r="3"></circle></svg>` },
             ],
@@ -731,7 +733,7 @@
                 { id: 103, name: "Reroll Prep", description: "Start the **first round** of the next cycle with **reroll:+3 Rerolls**.", tier: 1, effect: { type: "temp_reroll_boost", value: 3 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h22v16H1z"></path><path d="M7 10v4"></path><path d="M12 10v4"></path><path d="M17 10v4"></path></svg>` },
                 { id: 104, name: "Discount Card", description: "All subsequent shop purchases are **shop:10% cheaper**. (Non-Stackable)", tier: 1, effect: { type: "shop_discount", value: 0.1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19-9.19a6 6 0 0 0-8.49 8.49l9.19 9.19a2 2 0 0 0 2.83 0l8.1-8.1a2 2 0 0 0 0-2.83z"></path><line x1="14.5" y1="9.5" x2="9.5" y2="14.5"></line></svg>` },
                 { id: 105, name: "The Repeater", description: "The **special:first die you lock** each round rolls **special:twice** on the next reroll. (Non-Stackable)", tier: 1, effect: { type: "first_lock_reroll" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 1l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 23l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>` },
-                { id: 106, name: "Extra Die Slot", description: "Permanently adds a **special:6th die** to your rolling pool. (Max 6 dice total)", tier: 1, effect: { type: "extra_die" }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="M12 8v8m-4-4h8"></path></svg>` },
+                { id: 106, name: "Multiplier Die", description: "Converts one die into a **special:Multiplier Die**. This die's value doesn't count for combos, but **mult:multiplies** your score by its value. **special:(Does not apply to Four of a Kind)**. (Non-Stackable)", tier: 1, effect: { type: "multiplier_die", index: -1 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="m15 9-6 6M9 9l6 6"></path></svg>` },
                 { id: 107, name: "Pair Escalation", description: "Scoring a **score:Pair** grants a permanent **chips:+2 Chip** bonus to all future Pair scores in this run. (Stackable effect)", tier: 1, effect: { type: "permanent_flat_boost", combo: "Pair", value: 2 }, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14m-7-7h14"></path></svg>` },
             ]
         };
@@ -1155,6 +1157,9 @@
                             if (counts[enh.effect.pairValue] >= 3) { flatScoreAdd += enh.effect.value; }
                         }
                         break;
+                    case "locked_die_mult": // New case for ID 24
+                        finalMultiplier += (lockedDice.length * enh.effect.value);
+                        break;
                     case "locked_die_bonus":
                         flatScoreAdd += lockedDice.length * enh.effect.value;
                         break;
@@ -1213,9 +1218,12 @@
                 }
             });
 
-            const zeroRerollMult = gameState.enhancements.find(e => e.effect.type === "zero_reroll_mult");
-            if(zeroRerollMult && gameState.rerolls === 0) {
-                finalMultiplier *= zeroRerollMult.effect.value;
+            const maxRerollMult = gameState.enhancements.find(e => e.effect.type === "max_reroll_mult");
+            if (maxRerollMult) {
+                let baseRerolls = 2 + gameState.enhancements.filter(e => e.effect.type === "reroll_boost").reduce((acc, e) => acc + e.effect.value, 0);
+                if (gameState.rerolls === baseRerolls) {
+                    finalMultiplier *= maxRerollMult.effect.value;
+                }
             }
             
             finalScore *= finalMultiplier;
@@ -1246,11 +1254,28 @@
             return base;
         };
 
-        /**
-         * Calculates the best possible score from the current dice.
-         */
-        function getBestScoreDetails(values) {
-            let actualValues = [...values];
+        function getBestScoreDetails() { // No 'values' argument
+            // 1. Find multiplier dice
+            const multiplierPerks = gameState.enhancements.filter(e => e.effect.type === "multiplier_die");
+            const multiplierIndices = multiplierPerks.map(p => p.effect.index);
+            
+            let comboDice = [];
+            let scoreMultiplier = 1;
+
+            // 2. Separate dice into combo dice and multipliers
+            gameState.dice.forEach((die, index) => {
+                if (multiplierIndices.includes(index)) {
+                    scoreMultiplier *= die.value; // Add its value to the multiplier
+                } else {
+                    comboDice.push(die.value); // This die is used for combos
+                }
+            });
+            
+            // If no multiplier perks, default to 1
+            if (multiplierPerks.length === 0) scoreMultiplier = 1;
+
+            // 3. Use 'comboDice' for all subsequent logic
+            let actualValues = [...comboDice];
 
             const obsidianDie = gameState.enhancements.find(e => e.effect.type === "value_transformation");
             if(obsidianDie) {
@@ -1259,7 +1284,11 @@
             
             const absoluteDie = gameState.enhancements.find(e => e.effect.type === "set_value_combo");
             if (absoluteDie) {
-                actualValues[0] = absoluteDie.effect.value;
+                // This logic is tricky. Does it apply to combo dice only?
+                // Let's assume it applies to the *first combo die*.
+                if (actualValues.length > 0) {
+                        actualValues[0] = absoluteDie.effect.value;
+                }
             }
             
             let counts = {};
@@ -1267,13 +1296,17 @@
 
             const wildCard = gameState.enhancements.find(e => e.effect.type === "wild_card");
             if (wildCard && counts[wildCard.effect.value]) {
-                const wildCount = counts[wildCard.effect.value];
-                delete counts[wildCard.effect.value];
+                const wildCount = wildCard.effect.count ? Math.min(counts[wildCard.effect.value], wildCard.effect.count) : counts[wildCard.effect.value];
+                counts[wildCard.effect.value] -= wildCount; // Subtract the wildcards from the '1's count
+                if (counts[wildCard.effect.value] === 0) {
+                    delete counts[wildCard.effect.value];
+                }
+                
                 const highestCountKey = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b, null);
                 if (highestCountKey) {
                     counts[highestCountKey] += wildCount;
                 } else { // All dice were wild cards
-                    counts[wildCard.effect.value] = wildCount;
+                    counts[wildCard.effect.value] = wildCount; // Re-add them as their original value (e.g., as '1's)
                 }
             }
 
@@ -1328,7 +1361,7 @@
                     if(enh.effect.type === "flat_bonus" && enh.effect.combo === "No Combo") bonus += enh.effect.value;
                 });
                 const finalScore = (comboInsurance ? comboInsurance.effect.value : 0) + bonus;
-                return { combo: finalScore > 0 ? "No Combo (Insured)" : "No Combo", score: finalScore };
+                return { combo: finalScore > 0 ? "No Combo (Insured)" : "No Combo", score: finalScore * scoreMultiplier };
             }
             
             let maxScore = -1;
@@ -1339,8 +1372,17 @@
                 const outcome = potentialOutcomes.find(o => o.combo === comboName); 
                 if (!outcome) return;
                 const { score: currentScore } = calculateSpecificComboScore(comboName, outcome.baseScore, actualValues, counts);
-                if (currentScore > maxScore) {
-                    maxScore = currentScore;
+                
+                // We apply the multiplier *after* calculateSpecificComboScore
+                // MODIFIED LOGIC: Don't apply multiplier for 4-of-a-Kind
+                let finalScoreWithMultiplier = currentScore;
+                if (comboName !== "Four of a Kind") {
+                    finalScoreWithMultiplier = currentScore * scoreMultiplier;
+                }
+                // END MODIFICATION
+
+                if (finalScoreWithMultiplier > maxScore) {
+                    maxScore = finalScoreWithMultiplier;
                     winningCombo = comboName;
                 }
             });
@@ -1366,6 +1408,9 @@
             rollBtn.className = `w-full py-3 rounded-xl text-xl font-bold transition-all disabled:opacity-50 ${currentRollBtnStyle.class}`;
 
 
+            const wildCardPerk = gameState.enhancements.find(e => e.effect.type === "wild_card");
+            let wildCardUsed = false; // To ensure only one '1' is marked as wild
+
             diceContainer.innerHTML = '';
             const canToggleLock = !gameState.isRolling && !gameState.roundLockedDown && !gameState.isFirstRoll;
             gameState.dice.forEach((die, index) => {
@@ -1374,7 +1419,34 @@
                 dieEl.className = `die shadow-lg font-mono ${skin.class}`; // Apply skin class
                 
                 // Add emoji content, wrapped to be above sparkles
-                dieEl.innerHTML = `<span class="relative z-10">${getDieEmoji(die.value)}</span>`;
+                let dieContent = getDieEmoji(die.value);
+                let isWild = false;
+                
+                // Check for Joker's Wild (ID 65)
+                if (wildCardPerk && die.value === wildCardPerk.effect.value && !wildCardUsed) {
+                    isWild = true;
+                    wildCardUsed = true;
+                }
+                
+                // Add emoji content, wrapped to be above sparkles
+                if (isWild) {
+                    dieEl.innerHTML = `<span class="relative z-10">${dieContent}<span class="absolute -top-2 -right-1 text-base font-bold text-yellow-300" style="text-shadow: 0 0 5px #000;">W</span></span>`;
+                } else {
+                    dieEl.innerHTML = `<span class="relative z-10">${dieContent}</span>`;
+                }
+                
+                // NEW: Style for multiplier die
+                const multiplierPerk = gameState.enhancements.find(e => e.effect.type === "multiplier_die" && e.effect.index === index);
+                if (multiplierPerk) {
+                    dieEl.classList.add('border-4', 'border-purple-500'); // Add a purple border
+                    // Add the 'x' *inside* the span to keep it relative
+                    if (isWild) {
+                        dieEl.innerHTML = `<span class="relative z-10">${dieContent}<span class="absolute -top-2 -right-1 text-base font-bold text-yellow-300" style="text-shadow: 0 0 5px #000;">W</span><span class="absolute -top-2 -left-1 text-base font-bold text-purple-300" style="text-shadow: 0 0 5px #000;">x</span></span>`;
+                    } else {
+                        dieEl.innerHTML = `<span class="relative z-10">${dieContent}<span class="absolute -top-2 -right-1 text-base font-bold text-purple-300" style="text-shadow: 0 0 5px #000;">x</span></span>`;
+                    }
+                }
+
 
                 if (die.locked) dieEl.classList.add('locked');
                 if (!canToggleLock) dieEl.classList.add('die-disabled');
@@ -1403,7 +1475,7 @@
                 diceContainer.appendChild(dieEl);
             });
 
-            const { combo, score } = getBestScoreDetails(gameState.dice.map(d => d.value));
+            const { combo, score } = getBestScoreDetails();
             if (gameState.isFirstRoll) {
                 currentComboP.textContent = 'Roll to start!';
                 comboScoreP.classList.add('hidden');
@@ -1620,7 +1692,7 @@
 
             gameState.hasScoredThisRound = true; 
             
-            const { combo, score } = getBestScoreDetails(gameState.dice.map(d => d.value));
+            const { combo, score } = getBestScoreDetails();
             let totalScore = Math.round(score);
             
             // Apply permanent boosts after scoring
@@ -1828,6 +1900,26 @@
                  gameState.payoutSuccessCount[chosenReward.tier]++;
                  if (chosenReward.effect.type === "extra_die" && gameState.dice.length < 6) {
                      gameState.dice.push({ value: 1, locked: false, index: gameState.dice.length });
+                 }
+                 // NEW LOGIC for the *changed* perk 106
+                 if (chosenReward.effect.type === "multiplier_die") {
+                    // Find the highest index die that is NOT already a multiplier die
+                    let targetIndex = -1;
+                    for (let i = gameState.dice.length - 1; i >= 0; i--) {
+                        const isAlreadyMultiplier = gameState.enhancements.some(e => e.effect.type === "multiplier_die" && e.effect.index === i);
+                        if (!isAlreadyMultiplier) {
+                            targetIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (targetIndex !== -1) {
+                        // We store the index *on the perk object*
+                        chosenReward.effect.index = targetIndex;
+                    } else {
+                        // All dice are already multipliers? This shouldn't happen with T1/T2/T3 limits, but as a fallback, just pick the last one.
+                        chosenReward.effect.index = gameState.dice.length - 1;
+                    }
                  }
                  gameState.enhancements.push(chosenReward);
             } else { 
@@ -2790,6 +2882,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
